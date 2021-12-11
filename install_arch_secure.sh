@@ -24,7 +24,8 @@ USERSW="networkmanager vim"
 BASICUTILS="btrfs-progs man-db man-pages texinfo"
 INSTALLSW="${USERSW} ${BASICUTILS}"
 
-## Keymap (Do we need it? for install via script?)
+## Keymap 
+loadkeys $KEYMAP
 
 ## Check connection, if not online, try to connect to wi-fi.
 ## (We presume that we have wireless card working)
