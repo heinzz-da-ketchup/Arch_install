@@ -74,7 +74,6 @@ timedatectl set-ntp true
 INSTALL_PARTITION=$(get_valid_input "lsblk -d" "block device to install")
 
 ## Partition disk, i dont care about other partitioning schemes, encrypted boot, or swap
-##### TODO: hibernate to locked swap file? how, dammit? #####
 parted ${INSTALL_PARTITION} mklabel gpt
 parted ${INSTALL_PARTITION} mkpart EFI fat32 0% 512MB
 parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100%
@@ -82,7 +81,7 @@ parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100%
 ## Prepare LUKS2 encrypted root
 cryptsetup luksFormat ${INSTALL_PARTITION}p2		    ## Enter some easy passphrase, will remove later
 ## Not yet? do this in chroot?  systemd-cryptenroll --fido2-devica=auto ${INSTALL_PARTITION}p2
-cryptsetup open ${INSTALL_PARTITION}p2 cryptroot
+# cryptsetup open ${INSTALL_PARTITION}p2 cryptroot
 
 ## format root partition, prepare btrfs subvolumes
 mkfs.btrfs -L root /dev/mapper/cryptroot
