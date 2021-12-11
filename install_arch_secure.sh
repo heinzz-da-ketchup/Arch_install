@@ -47,10 +47,10 @@ loadkeys $KEYMAP
 
 ## Check connection, if not online, try to connect to wi-fi.
 ## (We presume that we have wireless card working)
-[[ $FORCE_IPV6_DISABLE ]] && sysclt net.ipv6.conf.all.disable_ipv6=1	## Disable IPv6 on demand before checking and setting internet connection
+[[ $FORCE_IPV6_DISABLE ]] && sysctl net.ipv6.conf.all.disable_ipv6=1	## Disable IPv6 on demand before checking and setting internet connection
 
 Tries=0
-while ! [[ $(ping c2 -q archlinux.org 2>/dev/null) ]]; do
+while ! [[ $(ping -c2 -q archlinux.org 2>/dev/null) ]]; do
 	echo "Internet connection not available, trying to connect to wi-fi"
 
 	WLAN=$(get_valid_input "iwctl device list" "wlan device name")
@@ -81,7 +81,7 @@ parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100%
 ## Prepare LUKS2 encrypted root
 cryptsetup luksFormat ${INSTALL_PARTITION}p2		    ## Enter some easy passphrase, will remove later
 ## Not yet? do this in chroot?  systemd-cryptenroll --fido2-devica=auto ${INSTALL_PARTITION}p2
-# cryptsetup open ${INSTALL_PARTITION}p2 cryptroot
+cryptsetup open ${INSTALL_PARTITION}p2 cryptroot
 
 ## format root partition, prepare btrfs subvolumes
 mkfs.btrfs -L root /dev/mapper/cryptroot
