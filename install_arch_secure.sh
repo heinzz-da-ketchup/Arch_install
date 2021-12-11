@@ -23,14 +23,49 @@ FORCE_IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 USERSW="networkmanager vim"
 BASICUTILS="btrfs-progs man-db man-pages texinfo"
 INSTALLSW="${USERSW} ${BASICUTILS}"
+## ----------------------------------------------
+
+## Some utility functions
+get_valid_input(){
+
+	echo ${1} ${2} >&2
+	Prompt=$( ${1} | tee /dev/tty)
+	Input="?"
+
+	while ! [[ $(grep ${Input} <<< ${Prompt} 2>/dev/null) ]]; do
+		echo "Please set "${2} >&2
+		read Input
+		[[ $(grep ${Input} <<< ${Prompt} 2>/dev/null) ]] || echo "Wrong "${2} >&2
+	done
+
+	echo ${Input}
+}
+## ----------------------------------------------
 
 ## Keymap 
 loadkeys $KEYMAP
 
 ## Check connection, if not online, try to connect to wi-fi.
 ## (We presume that we have wireless card working)
-## Handling of empty input is slightly borked, I DONT CARE ANYMORE
-get_wifi()
+[[ $FORCE_IPV6_DISABLE ]] && sysclt net.ipv6.conf.all.disable_ipv6=1	## Disable IPv6 on demand before checking and setting internet connection
+
+Tries=0
+while ! [[ $(ping c2 -q archlinux.org 2>/dev/null) ]]; do
+	echo "Internet connection not available, trying to connect to wi-fi"
+
+	WLAN=$(get_valid_input "iwctl device list" "wlan device name")
+
+	SSID=$(get_valid_input "iwctl station $WLAN get-networks" "SSID")
+
+	iwctl station ${WLAN} connect ${SSID}
+	sleep 1
+
+	let "Tries++"
+	if [[ $Tries -gt 3 ]]; then
+	echo "Cannot connect, please fix internet connection and run script again."
+	exit 1
+	fi
+done
 
 ## Set time via ntp
 timedatectl set-ntp true
@@ -79,37 +114,3 @@ genfstab -U /mnt >> /mnt/etc/fstab
 pacstrap /mnt base linux linux-firmware ${INSTALLSW}
 
 
-get_wifi () {
-Tries=0
-while ! [[ $(ping c2 -q archlinux.org 2>/dev/null) ]]; do
-    echo "Internet connection not available, trying to connect to wi-fi"
-    if [[ $(iwctl device list | grep wlan0) ]]; then
-	Wlan="wlan0"
-    else
-	Wlan="?"
-	Devices=$(iwctl device list | tee /dev/tty )
-	while ! [[ $(grep ${Wlan} <<< ${Devices}) ]]; do
-	    echo "Please set wlan device name"
-	    read Wlan
-	    [[ $(grep ${Wlan} <<< ${Devices}) ]] || echo "Wrong device name!\n"
-	done
-    fi
-
-    SSID="?"
-    SSIDS=$(iwctl station ${Wlan} get-networks | tee /dev/tty )
-    while ! [[ $(grep ${SSID} <<< ${SSIDs}) ]]; do
-	echo "Specify SSID to connect to"
-	read SSID
-	[[ $(grep ${SSID} <<< ${SSIDs}) ]] || echo "Wrong SSID!"
-    done
-
-    iwctl station ${Wlan} connect ${SSID}
-    sleep 1
-
-    let "Tries++"
-    if [[ $Tries -gt 3 ]]; then
-	echo "Cannot connect, please fix internet connection and run script again."
-	exit 1
-    fi
-done
-}
