@@ -25,6 +25,18 @@ BASICUTILS="btrfs-progs man-db man-pages texinfo"
 INSTALLSW="${USERSW} ${BASICUTILS}"
 ## ----------------------------------------------
 
+## Trap on fail and clean after ourselves
+clean_on_fail () {
+	umount /mnt/boot
+	umount -A --recursive /mnt/*
+	umount /mnt
+	cryptsetup close /dev/mapper/cryptroot
+	exit 1
+}
+
+trap clean_on_fail ERR
+trap clean_on_fail SIGINT
+
 ## Some utility functions
 get_valid_input(){
 
