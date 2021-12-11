@@ -83,7 +83,7 @@ done
 timedatectl set-ntp true
 
 ## show lsblk, select where to partition
-INSTALL_PARTITION=$(get_valid_input "lsblk -d" "block device to install")
+INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
 
 ## Partition disk, i dont care about other partitioning schemes, encrypted boot, or swap
 parted ${INSTALL_PARTITION} mklabel gpt
@@ -105,15 +105,15 @@ btrfs subvolume create /mnt/@pacman_cache
 umount /mnt
 
 ## Format /boot partition
-mkfs fat -F 32 /dev/${INSTALL_PARTITION}p1
+mkfs.fat -F 32 ${INSTALL_PARTITION}p1
 
 ## Mount all prepared partitions
-mkdir /mnt/boot
-mount /dev/${INSTALL_PARTITION}p1 /mnt/boot
+mkdir -p /mnt/boot
+mount ${INSTALL_PARTITION}p1 /mnt/boot
 mount -o subvol=@ /dev/mapper/cryptroot /mnt
-mkdir /mnt/home
+mkdir -p /mnt/home
 mount -o subvol=@home /dev/mapper/cryptroot /mnt/home
-mkdir /mnt/.snapshots
+mkdir -p /mnt/.snapshots
 mount -o subvol=@snapshots /dev/mapper/cryptroot /mnt/.snapshots
 mkdir -p /mnt/var/cache/pacman/pkg
 mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
