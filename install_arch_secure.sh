@@ -118,10 +118,11 @@ mount -o subvol=@snapshots /dev/mapper/cryptroot /mnt/.snapshots
 mkdir -p /mnt/var/cache/pacman/pkg
 mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
 
-## we can create fstab now
-genfstab -U /mnt >> /mnt/etc/fstab
-
 ## Install base system + defined utils
-pacstrap /mnt base linux linux-firmware ${INSTALLSW}
+# pacstrap /mnt base linux linux-firmware ${INSTALLSW}
+
+## we can create fstab now
+#genfstab -U /mnt >> /mnt/etc/fstab
+
 
 
