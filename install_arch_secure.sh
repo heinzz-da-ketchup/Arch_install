@@ -18,6 +18,8 @@
 
 
 ## Some control variables
+KEYMAP="cz-qwertz" 				## Keymap for ease of data entry
+FORCE_IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 USERSW="networkmanager vim"
 BASICUTILS="btrfs-progs man-db man-pages texinfo"
 INSTALLSW="${USERSW} ${BASICUTILS}"
