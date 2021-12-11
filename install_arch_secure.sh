@@ -27,9 +27,9 @@ INSTALLSW="${USERSW} ${BASICUTILS}"
 
 ## Trap on fail and clean after ourselves
 clean_on_fail () {
-	umount /mnt/boot
 	umount -A --recursive /mnt/*
 	umount /mnt
+	umount /mnt/boot
 	cryptsetup close /dev/mapper/cryptroot
 	exit 1
 }
@@ -87,6 +87,7 @@ INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
 
 ## Partition disk, i dont care about other partitioning schemes, encrypted boot, or swap
 parted ${INSTALL_PARTITION} mklabel gpt
+##!!!!!!!!!!!!!!!!!!!!!! set EFI flag!!!!
 parted ${INSTALL_PARTITION} mkpart EFI fat32 0% 512MB
 parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100%
 
@@ -124,5 +125,14 @@ mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
 ## we can create fstab now
 #genfstab -U /mnt >> /mnt/etc/fstab
 
+## Chroot to new install
 
+## update /etc/mkinitcpio.conf - add hooks
+## create /etc/crypttab.initramfs , add cryptrrot by UUID
+## mkinitcpio -P
 
+## install grub, config grub
+
+## passwd or new user
+
+##reboot! 
