@@ -1,3 +1,22 @@
+## ---------------------------------------------
+## Scritp to install arch-linux on LUKS encrypted btrfs drive
+## Features (hopefully): 
+##	FIDO2 LUKS unlock
+##	FIDO2 PAM for paswordless sudo
+##	Install fully configured system with Sway and dotfiles
+##
+## TODO:
+##	Everything, man!
+##	Configurable via cmdline options?
+## WONTDO:
+##	Different partitioning schemes
+##	Different WM and so one
+##	Non-UEFI install (don't even try, script wont work!)
+##
+## Auhtor: Jan Hrubes, 2021
+## ----------------------------------------------
+
+
 ## Some control variables
 USERSW="networkmanager vim"
 BASICUTILS="btrfs-progs man-db man-pages texinfo"
