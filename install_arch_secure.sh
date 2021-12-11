@@ -21,7 +21,7 @@
 KEYMAP="cz-qwertz" 				## Keymap for ease of data entry
 FORCE_IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 USERSW="networkmanager vim git openssh"
-BASICUTILS="btrfs-progs man-db man-pages texinfo"
+BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2"
 INSTALLSW="${USERSW} ${BASICUTILS}"
 ## ----------------------------------------------
 
@@ -84,6 +84,8 @@ timedatectl set-ntp true
 
 ## show lsblk, select where to partition
 INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
+CRYPT_PARTITION=${INSTALL_PARTITION}p2
+BOOT_PARTITION=${INSTALL_PARTITION}p1
 
 ## Partition disk, i dont care about other partitioning schemes, encrypted boot, or swap
 parted ${INSTALL_PARTITION} mklabel gpt
@@ -92,9 +94,8 @@ parted ${INSTALL_PARTITION} mkpart EFI fat32 0% 512MB
 parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100%
 
 ## Prepare LUKS2 encrypted root
-cryptsetup luksFormat ${INSTALL_PARTITION}p2		    ## Enter some easy passphrase, will remove later
-## Not yet? do this in chroot?  systemd-cryptenroll --fido2-devica=auto ${INSTALL_PARTITION}p2
-cryptsetup open ${INSTALL_PARTITION}p2 cryptroot
+cryptsetup luksFormat ${CRYPT_PARTITION}		    ## Enter some easy passphrase, will remove later
+cryptsetup open ${CRYPT_PARTITION} cryptroot
 
 ## format root partition, prepare btrfs subvolumes
 mkfs.btrfs -L root /dev/mapper/cryptroot
@@ -106,11 +107,11 @@ btrfs subvolume create /mnt/@pacman_cache
 umount /mnt
 
 ## Format /boot partition
-mkfs.fat -F 32 ${INSTALL_PARTITION}p1
+mkfs.fat -F 32 ${BOOT_PARTITION}
 
 ## Mount all prepared partitions
 mkdir -p /mnt/boot
-mount ${INSTALL_PARTITION}p1 /mnt/boot
+mount ${BOOT_PARTITION} /mnt/boot
 mount -o subvol=@ /dev/mapper/cryptroot /mnt
 mkdir -p /mnt/home
 mount -o subvol=@home /dev/mapper/cryptroot /mnt/home
@@ -127,6 +128,9 @@ mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
 
 ## Chroot to new install
 
+## Enroll fido2 key to cryptsetup
+## systemd-cryptenroll --fido2-device=auto ${CRYPT_PARTITION}
+
 ## update /etc/mkinitcpio.conf - add hooks
 ## create /etc/crypttab.initramfs , add cryptrrot by UUID
 ## mkinitcpio -P
@@ -134,5 +138,9 @@ mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
 ## install grub, config grub
 
 ## passwd or new user
+
+## before reboot, make sure to remove old passphrase from cryptroot!
+## exit
+## cryptsetup luksRemoveKey ${CRYPT_PARTITION}
 
 ##reboot! 
