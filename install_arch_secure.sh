@@ -71,7 +71,7 @@ done
 timedatectl set-ntp true
 
 ## show lsblk, select where to partition
-##### TODO #####
+INSTALL_PARTITION=$(get_valid_input "lsblk -d" "block device to install")
 
 ## Partition disk, i dont care about other partitioning schemes, encrypted boot, or swap
 ##### TODO: hibernate to locked swap file? how, dammit? #####
