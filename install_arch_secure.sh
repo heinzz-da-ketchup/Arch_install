@@ -168,7 +168,7 @@ create_swapfile () {
 	fallocate -l $(free | awk 'NR == 2 {print $2}') /mnt/swap/swapfile
 	chmod 600 /mnt/swap/swapfile
 	mkswap /mnt/swap/swapfile
-	swapon /swap/swapfile	
+	swapon /mnt/swap/swapfile	
 	echo "wm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
 }
