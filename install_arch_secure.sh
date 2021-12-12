@@ -223,7 +223,7 @@ echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initram
 ${CHROOT_PREFIX} mkinitcpio -P
 
 ## install grub, config grub
-${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+${CHROOT_PREFIX} grub-install --target=x86_64-efi --boot-directory=/mnt/boot --efi-directory=/boot --bootloader-id=GRUB
 ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.conf
 
 ## Create user - ask for username (if not provided in variable) and password
