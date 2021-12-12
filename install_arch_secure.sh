@@ -68,9 +68,9 @@ get_confirmed_input () {
 
 	Confirm=""
 	while ! [[ ${Confirm} == "y" ]]; do
-		echo "Please set $1:"
+		echo "Please set $1:" >&2
 		read Input
-		echo "is "${Input}" correct? y/n"
+		echo "is "${Input}" correct? y/n" >&2
 		read Confirm
 	done
 
