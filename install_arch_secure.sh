@@ -261,7 +261,7 @@ echo "We need to create non-root user."
 if [[ -z ${USERNAME} ]]; then
 	USERNAME=$(get_confirmed_input "username") 
 fi
-${CHROOT_PREFIX} useradd -m -G sudo -S /BIN/BASH ${username}
+${CHROOT_PREFIX} useradd -m -G sudo -s /bin/bash ${USERNAME}
 echo "Set password for "${USERNAME}
 ${CHROOT_PREFIX} passwd ${USERNAME}
 
