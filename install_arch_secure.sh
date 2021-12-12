@@ -32,7 +32,7 @@ HOSTNAME="jhrubes-NTB"
 KEYMAP="cz-qwertz" 				## Keymap for passphrases
 
 USERSW="networkmanager vim git openssh"
-BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub"
+BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr"
 INSTALLSW="${USERSW} ${BASICUTILS}"
 ## ----------------------------------------------
 
@@ -200,6 +200,7 @@ ${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
 ${CHROOT_PREFIX} hwclock --systohc
 
 ## set locales and keymap
+## TODO: for locale in locases add... 
 sed -i 's/^#cs_CZ.UTF-8 UTF-8/cs_CZ.UTF-8 UTF-8/ ; s/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /mnt/etc/locale.gen
 ${CHROOT_PREFIX} locale-gen
 echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
