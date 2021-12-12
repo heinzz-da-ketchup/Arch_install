@@ -18,35 +18,30 @@
 
 
 ## Some control variables
+## True/false control flow
 FIDO2_DISABLE=false
 IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 SKIP_CREATE_FS=false
 SKIP_MOUNT_FS=false
 SKIP_PACSTRAP=false
 
+## must be set here
 CHROOT_PREFIX="arch-chroot /mnt"
-INSTALL_PARTITION="/dev/nvme0n1"
-
-USERNAME="jhrubes"
-HOSTNAME="jhrubes-NTB"
-KEYMAP="cz-qwertz" 				## Keymap for passphrases
+KEYMAP="cz-qwertz" 				
 
 USERSW="networkmanager vim git openssh"
 BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr"
 INSTALLSW="${USERSW} ${BASICUTILS}"
+
+## Script will ask if empty
+INSTALL_PARTITION="/dev/nvme0n1"
+USERNAME="jhrubes"
+HOSTNAME="jhrubes-NTB"
+
 ## ----------------------------------------------
 
-## Trap on fail and clean after ourselves
-clean_on_fail () {
-	umount -A --recursive /mnt/*
-	umount /mnt
-	umount /mnt/boot
-	cryptsetup close /dev/mapper/cryptroot
-	exit 1
-}
-
+## End on error - DEBUG
 trap exit 1 ERR
-# trap clean_on_fail SIGINT
 
 ## Some utility functions
 get_valid_input (){
@@ -143,6 +138,7 @@ create_filesystem () {
     mkfs.fat -F 32 ${BOOT_PARTITION}
 }
 
+## For now fully hardcoded
 mount_filesystem () {
 
     [[ -e /dev/mapper/cryptroot ]] || cryptsetup open ${CRYPT_PARTITION} cryptroot
@@ -194,6 +190,8 @@ genfstab -U /mnt >> /mnt/etc/fstab
 if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --fido2-device=auto ${CRYPT_PARTITION}; fi
 ## and generate recovery key
 if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}; fi
+echo "Make sure you dont lose this!!! Press any key to continue."
+read -rsn 1
 
 ## Settimezone and hwclock
 ${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
@@ -238,6 +236,7 @@ ${CHROOT_PREFIX} passwd ${USERNAME}
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 ## not yet, debuugign and token doesnt work in arch live iso... 
+## DEBUG
 # if ! [[ ${FIDO2_DISABLE} = true ]]; then cryptsetup luksRemoveKey ${CRYPT_PARTITION}; fi
 
 ## We should have working system, lets try to go for it. = D
