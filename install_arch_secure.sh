@@ -169,7 +169,6 @@ create_swapfile () {
 	chmod 600 /mnt/swap/swapfile
 	mkswap /mnt/swap/swapfile
 	swapon /mnt/swap/swapfile	
-	echo "wm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
 }
 
@@ -269,6 +268,9 @@ ${CHROOT_PREFIX} passwd ${USERNAME}
 ## Enable networkmanager
 ## TODO - check if networkmanager exists? 
 systemctl enable NetworkManager.service
+
+## Sen lower swappiness
+echo "wm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 ## not yet, debuugign and token doesnt work in arch live iso... 
