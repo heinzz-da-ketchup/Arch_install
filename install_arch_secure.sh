@@ -168,7 +168,7 @@ create_swapfile () {
 	fallocate -l $(free | awk 'NR == 2 {print $2}') /mnt/swap/swapfile
 	chmod 600 /mnt/swap/swapfile
 	mkswap /mnt/swap/swapfile
-	${CHROOT_PREFIX} swapon /swap/swapfile
+	swapon /swap/swapfile	
 	echo "wm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
 }
@@ -199,6 +199,7 @@ create_swapfile
 
 ## Install base system + defined utils
 [[ $SKIP_PACSTRAP = true ]] || pacstrap /mnt base linux linux-firmware ${INSTALLSW}
+
 
 ## we can create fstab now
 ## TODO - run olny once
