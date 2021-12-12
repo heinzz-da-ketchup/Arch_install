@@ -20,9 +20,9 @@
 ## Some control variables
 FIDO2_DISABLE=false
 IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
-SKIP_CREATE_FS=true
-SKIP_MOUNT_FS=true
-SKIP_PACSTRAP=true
+SKIP_CREATE_FS=false
+SKIP_MOUNT_FS=false
+SKIP_PACSTRAP=false
 
 CHROOT_PREFIX="arch-chroot /mnt"
 INSTALL_PARTITION="/dev/nvme0n1"
@@ -80,7 +80,7 @@ get_confirmed_input () {
 get_install_partition () {
 
     ## show lsblk, select where to partition
-    [[ -z $INSTALL_PARTITION ]] && $INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
+    [[ -z $INSTALL_PARTITION ]] && INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
     CRYPT_PARTITION=${INSTALL_PARTITION}p2
     BOOT_PARTITION=${INSTALL_PARTITION}p1
 }
@@ -237,7 +237,8 @@ echo "Set password for "${USERNAME}
 ${CHROOT_PREFIX} passwd ${USERNAME}
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
-if ! [[ ${FIDO2_DISABLE} = true ]]; then cryptsetup luksRemoveKey ${CRYPT_PARTITION}; fi
+## not yet, debuugign and token doesnt work in arch live iso... 
+# if ! [[ ${FIDO2_DISABLE} = true ]]; then cryptsetup luksRemoveKey ${CRYPT_PARTITION}; fi
 
 ## We should have working system, lets try to go for it. = D
-# reboot 
+reboot 
