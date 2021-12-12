@@ -267,9 +267,9 @@ ${CHROOT_PREFIX} passwd ${USERNAME}
 
 ## Enable networkmanager
 ## TODO - check if networkmanager exists? 
-systemctl enable NetworkManager.service
+${CHROOT_PREFIX} systemctl enable NetworkManager.service
 
-## Sen lower swappiness
+## Set lower swappiness
 echo "wm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
