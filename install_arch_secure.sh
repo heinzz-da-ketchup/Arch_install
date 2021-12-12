@@ -21,6 +21,7 @@
 FIDO2_DISABLE=false
 IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 
+USERNAME=""
 KEYMAP="cz-qwertz" 				## Keymap for passphrases
 USERSW="networkmanager vim git openssh"
 BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2"
