@@ -30,7 +30,7 @@ CHROOT_PREFIX="arch-chroot /mnt"
 KEYMAP="cz-qwertz" 				
 
 USERSW="networkmanager vim git openssh"
-BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr"
+BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo"
 INSTALLSW="${USERSW} ${BASICUTILS}"
 
 ## Script will ask if empty
@@ -224,13 +224,17 @@ ${CHROOT_PREFIX} mkinitcpio -P
 ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
 
+## TODO - Skip if sudo group already exists
+${CHROOT_PREFIX} groupadd sudo
+echo "%sudo ALL=(ALL) ALL" >> /mnt/etc/sudoers
+
+## TODO - Ask to skip if superuser already exists
 ## Create user - ask for username (if not provided in variable) and password
 echo "We need to create non-root user."
 if [[ -z ${USERNAME} ]]; then
 	USERNAME=$(get_confirmed_input "username") 
 fi
-
-${CHROOT_PREFIX} useradd -m -s /bin/bash ${USERNAME}
+${CHROOT_PREFIX} useradd -m -G sudo -S /BIN/BASH ${username}
 echo "Set password for "${USERNAME}
 ${CHROOT_PREFIX} passwd ${USERNAME}
 
