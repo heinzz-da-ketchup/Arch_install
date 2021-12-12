@@ -155,6 +155,27 @@ mount_filesystem () {
     mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
     mkdir -p /mnt/swap
     mount -o subvol=@swap /dev/mapper/cryptroot /mnt/swap
+
+}
+
+## Create swap file
+create_swapfile () {
+
+	chmod 700 /mnt/swap
+	truncate -s 0 /mnt/swap/swapfile
+	chattr +C /mnt/swap/swapfile
+	btrfs property set /mnt/swap/swapfile compression none
+	fallocate -l $(free | awk 'NR == 2 {print $2}') /mnt/swap/swapfile
+	chmod 600 /mnt/swap/swapfile
+	mkswap /mnt/swap/swapfile
+	${CHROOT_PREFIX} swapon /swap/swapfile
+	echo "wm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
+
+}
+
+enable_hibernate () {
+	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume=UUID=$(findmnt -no UUID -T /mnt/swap/swapfile)\"/" /mnt/etc/default/grub
+	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume_offset=$(Arch_install/btrfs_map_physical /mnt/swap/swapfile | awk 'NR == 2 {print $9}')\"/" /mnt/etc/default/grub
 }
 ## ----------------------------------------------
 
@@ -174,11 +195,13 @@ timedatectl set-ntp true
 get_install_partition
 [[ $SKIP_CREATE_FS = true ]] || create_filesystem
 [[ $SKIP_MOUNT_FS = true ]] || mount_filesystem
+create_swapfile
 
 ## Install base system + defined utils
 [[ $SKIP_PACSTRAP = true ]] || pacstrap /mnt base linux linux-firmware ${INSTALLSW}
 
 ## we can create fstab now
+## TODO - run olny once
 genfstab -U /mnt >> /mnt/etc/fstab
 
 ## ---------------------------------------------
@@ -219,6 +242,10 @@ echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initram
 
 ## make initramfs
 ${CHROOT_PREFIX} mkinitcpio -P
+
+## disable splash (DEBUG??)
+sed -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/ config//' /mnt/etc/default/grub
+enable_hibernate
 
 ## install grub, config grub
 ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
