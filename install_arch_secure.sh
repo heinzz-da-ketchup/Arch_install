@@ -182,23 +182,23 @@ ${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
 ${CHROOT_PREFIX} hwclock --systohc
 
 ## set locales and keymap
-${CHROOT_PREFIX} sed -i 's/^#cs_CZ.UTF-8 UTF-8/cs_CZ.UTF-8 UTF-8/ ; s/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+sed -i 's/^#cs_CZ.UTF-8 UTF-8/cs_CZ.UTF-8 UTF-8/ ; s/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /mnt/etc/locale.gen
 ${CHROOT_PREFIX} locale-gen
-${CHROOT_PREFIX} echo "LANG=en_US.UTF-8" > /etc/locale.conf
-${CHROOT_PREFIX} echo "KEYMAP="${KEYMAP} > /etc/vconsole.conf
+echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
+echo "KEYMAP="${KEYMAP} > /mnt/etc/vconsole.conf
 
 ## set hosntame
 if [[ -z ${HOSTNAME} ]]; then
 	HOSTNAME=$(get_confirmed_input "hostname")
 fi
-${CHROOT_PREFIX} echo ${HOSTNAME} > /etc/hostname
+echo ${HOSTNAME} > /mnt/etc/hostname
 
 ## update /etc/mkinitcpio.conf - add hooks
-${CHROOT_PREFIX} sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)/' /etc/mkinitcpio.conf
+sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
 ## create /etc/crypttab.initramfs , add cryptrrot by UUID
-${CHROOT_PREFIX} cp /etc/crypttab /etc/crypttab.initramfs
-${CHROOT_PREFIX} echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /etc/crypttab.initramfs
+cp /mnt/etc/crypttab /mnt/etc/crypttab.initramfs
+echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
 
 ## make initramfs
 ${CHROOT_PREFIX} mkinitcpio -P
@@ -216,8 +216,6 @@ fi
 ${CHROOT_PREFIX} useradd -m -s /bin/bash ${USERNAME}
 echo "Set password for "${USERNAME}
 ${CHROOT_PREFIX} passwd ${USERNAME}
-
-exit
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 if ! [[ ${FIDO2_DISABLE} = true ]]; then cryptsetup luksRemoveKey ${CRYPT_PARTITION}; fi
