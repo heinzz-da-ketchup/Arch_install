@@ -238,6 +238,10 @@ ${CHROOT_PREFIX} useradd -m -G sudo -S /BIN/BASH ${username}
 echo "Set password for "${USERNAME}
 ${CHROOT_PREFIX} passwd ${USERNAME}
 
+## Enable networkmanager
+## TODO - check if networkmanager exists? 
+systemctl enable NetworkManager.service
+
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 ## not yet, debuugign and token doesnt work in arch live iso... 
 ## DEBUG
