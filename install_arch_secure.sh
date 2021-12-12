@@ -10,7 +10,7 @@
 ##	Configurable via cmdline options?
 ## WONTDO:
 ##	Different partitioning schemes
-##	Different WM and so one
+##	Different WM and so on
 ##	Non-UEFI install (don't even try, script wont work!)
 ##
 ## Auhtor: Jan Hrubes, 2021
@@ -20,7 +20,8 @@
 ## Some control variables
 FIDO2_DISABLE=false
 IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
-KEYMAP="cz-qwertz" 				## Keymap for ease of data entry
+
+KEYMAP="cz-qwertz" 				## Keymap for passphrases
 USERSW="networkmanager vim git openssh"
 BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2"
 INSTALLSW="${USERSW} ${BASICUTILS}"
@@ -55,7 +56,7 @@ get_valid_input(){
 }
 ## ----------------------------------------------
 
-## Main ligic functions
+## Main functions
 
 ## Check connection, if not online, try to connect to wi-fi.
 ## (We presume that we have wireless card working)
@@ -81,7 +82,7 @@ net_connect () {
     done
 }
 
-## Prepare filesystems - partition disk, create cryptroot, format ESP partition
+## Prepare filesystems - partition disk, create cryptroot, format EFI partition
 ## and prepare btrfs with subvolumes. Then mount all.
 prepare_filesystem () {
     ## show lsblk, select where to partition
