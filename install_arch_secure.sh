@@ -21,11 +21,13 @@
 FIDO2_DISABLE=false
 IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 
-USERNAME=""
+USERNAME="jhrubes"
+HOSTNAME="jhrubes-NTB"
 KEYMAP="cz-qwertz" 				## Keymap for passphrases
 USERSW="networkmanager vim git openssh"
-BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2"
+BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub"
 INSTALLSW="${USERSW} ${BASICUTILS}"
+CHROOT_PREFIX="arch-chroot /mnt"
 ## ----------------------------------------------
 
 ## Trap on fail and clean after ourselves
@@ -41,7 +43,7 @@ trap clean_on_fail ERR
 trap clean_on_fail SIGINT
 
 ## Some utility functions
-get_valid_input(){
+get_valid_input (){
 
 	echo ${1} ${2} >&2
 	Prompt=$( ${1} | tee /dev/tty)
@@ -55,6 +57,18 @@ get_valid_input(){
 
 	echo ${Input}
 }
+
+get_confirmed_input () {
+	Confirm=""
+	while ! [[ ${Confirm} == "y" ]]; do
+		echo "Please set $1:"
+		read Input
+		echo "is "${Input}" correct? y/n"
+		read Confirm
+	done
+
+	echo ${Input}
+}
 ## ----------------------------------------------
 
 ## Main functions
@@ -62,7 +76,7 @@ get_valid_input(){
 ## Check connection, if not online, try to connect to wi-fi.
 ## (We presume that we have wireless card working)
 net_connect () {
-    [[ $IPV6_DISABLE ]] && sysctl net.ipv6.conf.all.disable_ipv6=1	## Disable IPv6 on demand before checking and setting internet connection
+    if [[ ${IPV6_DISABLE} = true ]]; then sysctl net.ipv6.conf.all.disable_ipv6=1; fi	## Disable IPv6 on demand before checking and setting internet connection
 
     Tries=0
     while ! [[ $(ping -c2 -q archlinux.org 2>/dev/null) ]]; do
@@ -94,12 +108,12 @@ prepare_filesystem () {
     ## Partition disk, i dont care about other partitioning schemes or encrypted boot. Swapping to a swapfile.
     parted ${INSTALL_PARTITION} mklabel gpt
     parted ${INSTALL_PARTITION} mkpart EFI fat32 0% 512MB
-    parted ${INSTALL_PARTITION} set 1 esp
+    parted ${INSTALL_PARTITION} set 1 esp on
     parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100%
 
     ## Prepare LUKS2 encrypted root
     echo "Preparing encrypted volume"
-    [[ ${FIDO2_DISABLE} ]] || echo "No need to set strong passphrase, it will later be replaced by FIDO2 token and recovery key"
+    if ! [[ ${FIDO2_DISABLE} = true ]]; then echo "No need to set strong passphrase, it will later be replaced by FIDO2 token and recovery key"; fi
     cryptsetup luksFormat ${CRYPT_PARTITION}
     cryptsetup open ${CRYPT_PARTITION} cryptroot
 
@@ -130,22 +144,6 @@ prepare_filesystem () {
     mount -o subvol=@swap /dev/mapper/cryptroot /mnt/swap
 }
 
-## Create user - ask for username (if not provided in variable) and password
-create_user () {
-	echo "We need to create non-root user."
-	if [[ -z ${USERNAME} ]]; then
-		Confirm=""
-		while ! [[ ${Confirm} == "y" ]]; do
-			echo "Please set username:"
-			read USERNAME
-			echo "is "${USERNAME}" correct? y/n"
-			read Confirm
-		done
-	fi
-	useradd -m -s /bin/bash ${USERNAME}
-	echo "Set password for "${USERNAME}
-	passwd ${USERNAME}
-}
 ## ----------------------------------------------
 
 ## Main script flow
@@ -153,7 +151,7 @@ create_user () {
 ## make sure we are in the correct directory
 cd /root
 
-## Keymap 
+## Keymap for instalation ISO - mainly for passphrases
 loadkeys ${KEYMAP}
 
 net_connect
@@ -169,26 +167,60 @@ pacstrap /mnt base linux linux-firmware ${INSTALLSW}
 ## we can create fstab now
 genfstab -U /mnt >> /mnt/etc/fstab
 
+## ---------------------------------------------
 ## Chroot to new install
-arch-chroot /mnt
+## (we cannot chroot, so we will use ${CHROOT_PREFIX}
+## ---------------------------------------------
 
 ## Enroll fido2 key to cryptsetup (if we are using one)
-[[ ${FIDO2_DISABLE} ]] || systemd-cryptenroll --fido2-device=auto ${CRYPT_PARTITION}
+if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --fido2-device=auto ${CRYPT_PARTITION}; fi
 ## and generate recovery key
-[[ ${FIDO2_DISABLE} ]] || systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}
+if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}; fi
+
+## Settimezone and hwclock
+${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
+${CHROOT_PREFIX} hwclock --systohc
+
+## set locales and keymap
+${CHROOT_PREFIX} sed -i 's/^#cs_CZ.UTF-8 UTF-8/cs_CZ.UTF-8 UTF-8/ ; s/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /etc/locale.gen
+${CHROOT_PREFIX} locale-gen
+${CHROOT_PREFIX} echo "LANG=en_US.UTF-8" > /etc/locale.conf
+${CHROOT_PREFIX} echo "KEYMAP="${KEYMAP} > /etc/vconsole.conf
+
+## set hosntame
+if [[ -z ${HOSTNAME} ]]; then
+	HOSTNAME=$(get_confirmed_input "hostname")
+fi
+${CHROOT_PREFIX} echo ${HOSTNAME} > /etc/hostname
 
 ## update /etc/mkinitcpio.conf - add hooks
+${CHROOT_PREFIX} sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)/' /etc/mkinitcpio.conf
+
 ## create /etc/crypttab.initramfs , add cryptrrot by UUID
-## mkinitcpio -P
+${CHROOT_PREFIX} cp /etc/crypttab /etc/crypttab.initramfs
+${CHROOT_PREFIX} echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /etc/crypttab.initramfs
+
+## make initramfs
+${CHROOT_PREFIX} mkinitcpio -P
 
 ## install grub, config grub
+${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.conf
 
-create_user
+## Create user - ask for username (if not provided in variable) and password
+echo "We need to create non-root user."
+if [[ -z ${USERNAME} ]]; then
+	USERNAME=$(get_confirmed_input "username") 
+fi
+
+${CHROOT_PREFIX} useradd -m -s /bin/bash ${USERNAME}
+echo "Set password for "${USERNAME}
+${CHROOT_PREFIX} passwd ${USERNAME}
 
 exit
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
-[[ ${FIDO2_DISABLE} ]] || cryptsetup luksRemoveKey ${CRYPT_PARTITION}
+if ! [[ ${FIDO2_DISABLE} = true ]]; then cryptsetup luksRemoveKey ${CRYPT_PARTITION}; fi
 
 ## We should have working system, lets try to go for it. = D
 # reboot 
