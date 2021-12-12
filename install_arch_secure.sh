@@ -163,11 +163,20 @@ arch-chroot /mnt
 ## install grub, config grub
 
 ## passwd or new user
+while ! [[ ${Confirm} == "y" ]]; do
+	echo "We need to create non-root user. Please set username:"
+	read Username
+	echo "is "${Username}" correct? y/n"
+	read Confirm
+done
+useradd -m -s /bin/bash ${Username}
+echo "Set password for "${Username}
+passwd ${Username}
 
-## exit
+exit
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 [[ ${FIDO2_DISABLE} ]] || cryptsetup luksRemoveKey ${CRYPT_PARTITION}
 
 ## We should have working system, lets try to go for it. = D
-reboot 
+# reboot 
