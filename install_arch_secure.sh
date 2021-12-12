@@ -45,8 +45,8 @@ clean_on_fail () {
 	exit 1
 }
 
-trap clean_on_fail ERR
-trap clean_on_fail SIGINT
+trap exit 1 ERR
+# trap clean_on_fail SIGINT
 
 ## Some utility functions
 get_valid_input (){
