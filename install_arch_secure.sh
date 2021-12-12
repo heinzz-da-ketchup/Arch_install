@@ -20,14 +20,20 @@
 ## Some control variables
 FIDO2_DISABLE=false
 IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
+SKIP_CREATE_FS=true
+SKIP_MOUNT_FS=true
+SKIP_PACSTRAP=true
+
+CHROOT_PREFIX="arch-chroot /mnt"
+INSTALL_PARTITION="/dev/nvme0n1"
 
 USERNAME="jhrubes"
 HOSTNAME="jhrubes-NTB"
 KEYMAP="cz-qwertz" 				## Keymap for passphrases
+
 USERSW="networkmanager vim git openssh"
 BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub"
 INSTALLSW="${USERSW} ${BASICUTILS}"
-CHROOT_PREFIX="arch-chroot /mnt"
 ## ----------------------------------------------
 
 ## Trap on fail and clean after ourselves
@@ -59,6 +65,7 @@ get_valid_input (){
 }
 
 get_confirmed_input () {
+
 	Confirm=""
 	while ! [[ ${Confirm} == "y" ]]; do
 		echo "Please set $1:"
@@ -69,6 +76,14 @@ get_confirmed_input () {
 
 	echo ${Input}
 }
+
+get_install_partition () {
+
+    ## show lsblk, select where to partition
+    [[ -z $INSTALL_PARTITION ]] && $INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
+    CRYPT_PARTITION=${INSTALL_PARTITION}p2
+    BOOT_PARTITION=${INSTALL_PARTITION}p1
+}
 ## ----------------------------------------------
 
 ## Main functions
@@ -76,6 +91,7 @@ get_confirmed_input () {
 ## Check connection, if not online, try to connect to wi-fi.
 ## (We presume that we have wireless card working)
 net_connect () {
+
     if [[ ${IPV6_DISABLE} = true ]]; then sysctl net.ipv6.conf.all.disable_ipv6=1; fi	## Disable IPv6 on demand before checking and setting internet connection
 
     Tries=0
@@ -99,11 +115,7 @@ net_connect () {
 
 ## Prepare filesystems - partition disk, create cryptroot, format EFI partition
 ## and prepare btrfs with subvolumes. Then mount all.
-prepare_filesystem () {
-    ## show lsblk, select where to partition
-    INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
-    CRYPT_PARTITION=${INSTALL_PARTITION}p2
-    BOOT_PARTITION=${INSTALL_PARTITION}p1
+create_filesystem () {
 
     ## Partition disk, i dont care about other partitioning schemes or encrypted boot. Swapping to a swapfile.
     parted ${INSTALL_PARTITION} mklabel gpt
@@ -129,11 +141,16 @@ prepare_filesystem () {
 
     ## Format /boot partition
     mkfs.fat -F 32 ${BOOT_PARTITION}
+}
+
+mount_filesystem () {
+
+    [[ -e /dev/mapper/cryptroot ]] || cryptsetup open ${CRYPT_PARTITION} cryptroot
 
     ## Mount all prepared partitions
+    mount -o subvol=@ /dev/mapper/cryptroot /mnt
     mkdir -p /mnt/boot
     mount ${BOOT_PARTITION} /mnt/boot
-    mount -o subvol=@ /dev/mapper/cryptroot /mnt
     mkdir -p /mnt/home
     mount -o subvol=@home /dev/mapper/cryptroot /mnt/home
     mkdir -p /mnt/.snapshots
@@ -143,7 +160,6 @@ prepare_filesystem () {
     mkdir -p /mnt/swap
     mount -o subvol=@swap /dev/mapper/cryptroot /mnt/swap
 }
-
 ## ----------------------------------------------
 
 ## Main script flow
@@ -159,10 +175,12 @@ net_connect
 ## Set time via ntp
 timedatectl set-ntp true
 
-prepare_filesystem
+get_install_partition
+[[ $SKIP_CREATE_FS = true ]] || create_filesystem
+[[ $SKIP_MOUNT_FS = true ]] || mount_filesystem
 
 ## Install base system + defined utils
-pacstrap /mnt base linux linux-firmware ${INSTALLSW}
+[[ $SKIP_PACSTRAP = true ]] || pacstrap /mnt base linux linux-firmware ${INSTALLSW}
 
 ## we can create fstab now
 genfstab -U /mnt >> /mnt/etc/fstab
