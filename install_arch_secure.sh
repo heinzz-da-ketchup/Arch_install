@@ -128,6 +128,23 @@ prepare_filesystem () {
     mkdir -p /mnt/swap
     mount -o subvol=@swap /dev/mapper/cryptroot /mnt/swap
 }
+
+## Create user - ask for username (if not provided in variable) and password
+create_user () {
+	echo "We need to create non-root user."
+	if [[ -z ${USERNAME} ]]; then
+		Confirm=""
+		while ! [[ ${Confirm} == "y" ]]; do
+			echo "Please set username:"
+			read USERNAME
+			echo "is "${USERNAME}" correct? y/n"
+			read Confirm
+		done
+	fi
+	useradd -m -s /bin/bash ${USERNAME}
+	echo "Set password for "${USERNAME}
+	passwd ${USERNAME}
+}
 ## ----------------------------------------------
 
 ## Main script flow
@@ -162,16 +179,7 @@ arch-chroot /mnt
 
 ## install grub, config grub
 
-## passwd or new user
-while ! [[ ${Confirm} == "y" ]]; do
-	echo "We need to create non-root user. Please set username:"
-	read Username
-	echo "is "${Username}" correct? y/n"
-	read Confirm
-done
-useradd -m -s /bin/bash ${Username}
-echo "Set password for "${Username}
-passwd ${Username}
+create_user
 
 exit
 
