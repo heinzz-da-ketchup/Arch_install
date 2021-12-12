@@ -150,6 +150,9 @@ create_user () {
 
 ## Main script flow
 
+## make sure we are in the correct directory
+cd /root
+
 ## Keymap 
 loadkeys ${KEYMAP}
 
