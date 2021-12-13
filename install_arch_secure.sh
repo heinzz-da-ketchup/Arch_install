@@ -175,7 +175,9 @@ create_swapfile () {
 
 enable_hibernate () {
 	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume=UUID=$(findmnt -no UUID -T /mnt/swap/swapfile)\"/" /mnt/etc/default/grub
-	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume_offset=$(Arch_install/btrfs_map_physical /mnt/swap/swapfile | awk 'NR == 2 {print $9}')\"/" /mnt/etc/default/grub
+	SWAPFILE_PHYSICAL=$(Arch_install/btrfs_map_physical /mnt/swap/swapfile | awk 'NR == 2 {print $9}')
+	PAGESIZE=$(${CHROOT_PREFIX} getconf PAGESIZE)
+	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume_offset=$(expr $SWAPFILE_PHYSICAL / $PAGESIZE)\"/" /mnt/etc/default/grub
 }
 ## ----------------------------------------------
 
