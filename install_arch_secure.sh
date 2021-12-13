@@ -258,9 +258,8 @@ enable_hibernate
 ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
 
-## TODO - Skip if sudo group already exists
-${CHROOT_PREFIX} groupadd sudo
-echo "%sudo ALL=(ALL) ALL" >> /mnt/etc/sudoers
+## TODO - check if wheel gropu is already in sudoers
+echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
 
 ## TODO - Ask to skip if superuser already exists
 ## Create user - ask for username (if not provided in variable) and password
@@ -268,7 +267,7 @@ echo "We need to create non-root user."
 if [[ -z ${USERNAME} ]]; then
 	USERNAME=$(get_confirmed_input "username") 
 fi
-${CHROOT_PREFIX} useradd -m -G sudo -s /bin/bash ${USERNAME}
+${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
 echo "Set password for "${USERNAME}
 ${CHROOT_PREFIX} passwd ${USERNAME}
 
@@ -284,6 +283,8 @@ echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
 ## DEBUG - copy over the install scripts to be able to work on them in the OS
 cp -r /root/Arch_install /mnt/home/${USERNAME}/
+UID=$(grep ${USERNAME} /mnt/etc/passwd | cut -d ':' -t 4 )
+chown -R ${UID}:${UID} /mnt/home/${USERNAME}/Arch_install
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 ## not yet, debuugign and token doesnt work in arch live iso... 
