@@ -20,7 +20,7 @@ echo '  ["/root/Arch_install/config_archiso.sh"]="0:0:755"'>> /mnt/archiso_custo
 echo ')' >> /mnt/archiso_custom/profiledef.sh
 
 ## set keymap
-echo "KEYMAP=cz-qwertz" >> /mnt/archiso_custom/airootfs/vconsole.conf
+echo "KEYMAP=cz-qwertz" >> /mnt/archiso_custom/airootfs/etc/vconsole.conf
 
 ## set wifi
 mkdir -p /mnt/archiso_custom/airootfs/var/lib/iwd
