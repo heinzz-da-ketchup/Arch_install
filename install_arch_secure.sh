@@ -24,6 +24,7 @@ IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 SKIP_CREATE_FS=false
 SKIP_MOUNT_FS=false
 SKIP_PACSTRAP=false
+ONLY_MOUNT=true
 
 ## must be set here
 CHROOT_PREFIX="arch-chroot /mnt"
@@ -186,12 +187,18 @@ cd /root
 ## Keymap for instalation ISO - mainly for passphrases
 loadkeys ${KEYMAP}
 
+
 net_connect
 
 ## Set time via ntp
 timedatectl set-ntp true
 
 get_install_partition
+## DEBUG - option to only mount prepared FS, for debbuging
+if [[ ${ONLY_MOUNT} = true ]]; then
+	mount_filesystem
+	exit 0
+fi
 [[ $SKIP_CREATE_FS = true ]] || create_filesystem
 [[ $SKIP_MOUNT_FS = true ]] || mount_filesystem
 create_swapfile
