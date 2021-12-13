@@ -24,7 +24,7 @@ IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 SKIP_CREATE_FS=false
 SKIP_MOUNT_FS=false
 SKIP_PACSTRAP=false
-ONLY_MOUNT=true
+ONLY_MOUNT=false
 
 ## must be set here
 CHROOT_PREFIX="arch-chroot /mnt"
@@ -287,7 +287,7 @@ echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 ## DEBUG - copy over the install scripts to be able to work on them in the OS
 cp -r /root/Arch_install /mnt/home/${USERNAME}/
 cp -r /root/.ssh /mnt/home/${USERNAME}/
-UID=$(grep ${USERNAME} /mnt/etc/passwd | cut -d ':' -t 4 )
+UID=$(grep ${USERNAME} /mnt/etc/passwd | cut -d ':' -f 4 )
 chown -R ${UID}:${UID} /mnt/home/${USERNAME}/Arch_install
 chown -R ${UID}:${UID} /mnt/home/${USERNAME}/.ssh
 
