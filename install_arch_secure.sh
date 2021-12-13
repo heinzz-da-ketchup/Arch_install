@@ -279,6 +279,9 @@ ${CHROOT_PREFIX} systemctl enable NetworkManager.service
 ## Set lower swappiness
 echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
+## DEBUG - copy over the install scripts to be able to work on them in the OS
+cp -r /root/Arch_install /mnt/home/${USERNAME}/
+
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 ## not yet, debuugign and token doesnt work in arch live iso... 
 ## DEBUG
