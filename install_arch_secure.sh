@@ -110,7 +110,7 @@ net_connect () {
 }
 
 ## Prepare filesystems - partition disk, create cryptroot, format EFI partition
-## and prepare btrfs with subvolumes. Then mount all.
+## and prepare btrfs with subvolumes. 
 create_filesystem () {
 
     ## Partition disk, i dont care about other partitioning schemes or encrypted boot. Swapping to a swapfile.
@@ -251,7 +251,7 @@ echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initram
 ${CHROOT_PREFIX} mkinitcpio -P
 
 ## disable splash (DEBUG??)
-sed -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/ config//' /mnt/etc/default/grub
+sed -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/ quiet//' /mnt/etc/default/grub
 enable_hibernate
 
 ## install grub, config grub
