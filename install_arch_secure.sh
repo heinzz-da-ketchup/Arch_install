@@ -272,6 +272,9 @@ ${CHROOT_PREFIX} useradd -m -G sudo -s /bin/bash ${USERNAME}
 echo "Set password for "${USERNAME}
 ${CHROOT_PREFIX} passwd ${USERNAME}
 
+## Disable predictable interface names
+ln -s /dev/null /mnt/etc/udev/rules.d/80-net-setup-link.rules
+
 ## Enable networkmanager
 ## TODO - check if networkmanager exists? 
 ${CHROOT_PREFIX} systemctl enable NetworkManager.service
