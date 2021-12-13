@@ -259,7 +259,7 @@ ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootlo
 ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
 
 ## TODO - check if wheel gropu is already in sudoers
-echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers
+echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers.d/wheel
 
 ## TODO - Ask to skip if superuser already exists
 ## Create user - ask for username (if not provided in variable) and password
