@@ -166,7 +166,7 @@ create_swapfile () {
 	truncate -s 0 /mnt/swap/swapfile
 	chattr +C /mnt/swap/swapfile
 	btrfs property set /mnt/swap/swapfile compression none
-	fallocate -l $(free | awk 'NR == 2 {print $2}') /mnt/swap/swapfile
+	fallocate -l $(free -h | awk 'NR == 2 {print $2}' | sed 's/i//' ) /mnt/swap/swapfile
 	chmod 600 /mnt/swap/swapfile
 	mkswap /mnt/swap/swapfile
 	swapon /mnt/swap/swapfile	
