@@ -1,14 +1,44 @@
 USERNAME="jhrubes"
+SCRIPT_DIR="/home/${USERNAME}/Arch_install"
+BUILDDIR="/home/${USERNAME}/builds"
 
 rm -r /mnt/archiso_custom
 
 ## copy profile
 cp -r /usr/share/archiso/configs/releng /mnt/archiso_custom
 
+## Prepare packages and binary files to use
+## Get and build btrfs_map_physical
+
+## get and makepkg for signed shim
+if ! [[ -e ${SCRIPT_DIR}/shim-signed-*pkg.tar.zst ]]; then
+	mkdir -p ${BUILDDIR}
+	cd ${BUILDDIR}
+	git clone https://aur.archlinux.org/shim-signed.git
+	cd ${BUILDDIR}/shim-signed
+
+	## Due dilligence
+	echo "check your AUR build files!" 
+	less PKGBUILD
+	less shim-signed.install
+	echo "is it OK? Y to continue"
+	read Confirm
+	if ! [[ ${Confirm} =~ y|Y ]]; then
+		echo "Aborting install"
+		exit 1
+	fi
+
+	makepkg -rc
+
+	cp ${BUILDDIR}/shim-signed/shim-signed-*pkg.tar.zst ${SCRIPT_DIR}
+	cd ${SCRIPT_DIR}
+fi
+
+
 ## copy over .ssh and Arch_install dirs
 mkdir /mnt/archiso_custom/airootfs/root/.ssh
 cp -r /home/${USERNAME}/.ssh/id_ed25519 /mnt/archiso_custom/airootfs/root/.ssh/
-cp -r /home/${USERNAME}/Arch_install /mnt/archiso_custom/airootfs/root/
+cp -r ${SCRIPT_DIR} /mnt/archiso_custom/airootfs/root/
 
 ## set permissions 
 sed -i '$d' /mnt/archiso_custom/profiledef.sh
