@@ -2,13 +2,8 @@ USERNAME="jhrubes"
 SCRIPT_DIR="/home/${USERNAME}/Arch_install"
 BUILDDIR="/home/${USERNAME}/builds"
 
-rm -r /mnt/archiso_custom
-
-## copy profile
-cp -r /usr/share/archiso/configs/releng /mnt/archiso_custom
-
 ## Prepare packages and binary files to use
-pacman -Sy base-devel
+sudo pacman -Sy base-devel archiso
 
 ## Get and build btrfs_map_physical
 if ! [[ -e ${SCRIPT_DIR}/btrfs_map_physical ]]; then
@@ -48,6 +43,11 @@ if ! [[ -e ${SCRIPT_DIR}/shim-signed-*pkg.tar.zst ]]; then
 	cd ${SCRIPT_DIR}
 fi
 
+rm -r /mnt/archiso_custom
+
+## copy profile
+sudo cp -r /usr/share/archiso/configs/releng /mnt/archiso_custom
+sudo chown -R ${USERNAME}:${USERNAME} /mnt/archiso_custom
 
 ## copy over .ssh and Arch_install dirs
 mkdir /mnt/archiso_custom/airootfs/root/.ssh
@@ -75,4 +75,4 @@ echo "Passphrase=NebudouMitStenata" >> /mnt/archiso_custom/airootfs/var/lib/iwd/
 echo "git" >> /mnt/archiso_custom/packages.x86_64
 
 ## build archiso
-mkarchiso -v -w /tmp/archiso-tmp -o /tmp /mnt/archiso_custom
+sudo mkarchiso -v -w /tmp/archiso-tmp -o /tmp /mnt/archiso_custom
