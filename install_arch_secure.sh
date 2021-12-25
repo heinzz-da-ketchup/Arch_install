@@ -24,6 +24,7 @@ IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 SKIP_CREATE_FS=false
 SKIP_MOUNT_FS=false
 SKIP_PACSTRAP=false
+SKIP_SWAPFILE=false
 SKIP_SECUREBOOT=false
 ONLY_MOUNT=false
 
@@ -279,7 +280,7 @@ if [[ ${ONLY_MOUNT} = true ]]; then
 fi
 [[ $SKIP_CREATE_FS = true ]] || create_filesystem
 [[ $SKIP_MOUNT_FS = true ]] || mount_filesystem
-create_swapfile
+[[ $SKIP_SWAPFILE = true ]] || create_swapfile
 
 ## Install base system + defined utils
 [[ $SKIP_PACSTRAP = true ]] || pacstrap /mnt base linux linux-firmware ${INSTALLSW}
@@ -317,6 +318,17 @@ ${CHROOT_PREFIX} mkinitcpio -P
 sed -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/ quiet//' /mnt/etc/default/grub
 enable_hibernate
 
+## TODO - Ask to skip if superuser already exists
+## Create user - ask for username (if not provided in variable) and password
+## Need to create user before SecureBOokt because of ~/ used 
+echo "We need to create non-root user."
+if [[ -z ${USERNAME} ]]; then
+	USERNAME=$(get_confirmed_input "username") 
+fi
+${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
+echo "Set password for "${USERNAME}
+${CHROOT_PREFIX} passwd ${USERNAME}
+
 ## install grub, config grub
 ## SecureBoot runs its own grub-install
 [[ ${SKIP_SECUREBOOT} = true ]] && ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
@@ -341,16 +353,6 @@ echo ${HOSTNAME} > /mnt/etc/hostname
 ## TODO - check if wheel gropu is already in sudoers
 echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers.d/wheel
 chmod 0440 /mnt/etc/sudoers.d/wheel
-
-## TODO - Ask to skip if superuser already exists
-## Create user - ask for username (if not provided in variable) and password
-echo "We need to create non-root user."
-if [[ -z ${USERNAME} ]]; then
-	USERNAME=$(get_confirmed_input "username") 
-fi
-${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
-echo "Set password for "${USERNAME}
-${CHROOT_PREFIX} passwd ${USERNAME}
 
 ## Disable predictable interface names
 ln -s /dev/null /mnt/etc/udev/rules.d/80-net-setup-link.rules
