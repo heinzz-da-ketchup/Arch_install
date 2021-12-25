@@ -371,8 +371,7 @@ echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 cp -r /root/Arch_install /mnt/home/${USERNAME}/
 cp -r /root/.ssh /mnt/home/${USERNAME}/
 USER_ID=$(grep ${USERNAME} /mnt/etc/passwd | cut -d ':' -f 4 )
-chown -R ${USER_ID}:${USER_ID} /mnt/home/${USERNAME}/Arch_install
-chown -R ${USER_ID}:${USER_ID} /mnt/home/${USERNAME}/.ssh
+chown -R ${USER_ID}:${USER_ID} /mnt/home/${USERNAME}/
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 ## not yet, debuugign and token doesnt work in arch live iso... 
