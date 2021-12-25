@@ -296,6 +296,12 @@ if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --
 echo "Make sure you dont lose this!!! Press any key to continue."
 read -rsn 1
 
+## set locales and keymap
+## TODO: for locale in locases add... 
+sed -i 's/^#cs_CZ.UTF-8 UTF-8/cs_CZ.UTF-8 UTF-8/ ; s/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /mnt/etc/locale.gen
+${CHROOT_PREFIX} locale-gen
+echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
+echo "KEYMAP="${KEYMAP} > /mnt/etc/vconsole.conf
 
 ## update /etc/mkinitcpio.conf - add hooks
 sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
@@ -325,13 +331,6 @@ genfstab -U /mnt >> /mnt/etc/fstab
 ## Settimezone and hwclock
 ${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
 ${CHROOT_PREFIX} hwclock --systohc
-
-## set locales and keymap
-## TODO: for locale in locases add... 
-sed -i 's/^#cs_CZ.UTF-8 UTF-8/cs_CZ.UTF-8 UTF-8/ ; s/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /mnt/etc/locale.gen
-${CHROOT_PREFIX} locale-gen
-echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
-echo "KEYMAP="${KEYMAP} > /mnt/etc/vconsole.conf
 
 ## set hosntame
 if [[ -z ${HOSTNAME} ]]; then
