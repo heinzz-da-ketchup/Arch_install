@@ -63,7 +63,7 @@ secure_boot () {
 		done
 
 		## install boot entry 
-		sudo efibootmgr --verbose --disk ${INSTALL_PARTITION} --part 1 --create --label "Shim" --loader /boot/EFI/GRUB/BOOTx64.efi  
+		sudo efibootmgr --verbose --disk ${INSTALL_PARTITION} --part 1 --create --label "Shim" --loader /EFI/GRUB/BOOTx64.efi  
 	fi
 
 	## create MoK and certs
@@ -81,7 +81,7 @@ sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md
 grub,1,Free Software Foundation,grub,2.06,https://www.gnu.org/software/grub
 EOF
 	sudo cp /tmp/sbat.csv /etc/grub.d/sbat.csv
-	sudo grub-install --target=x86_64-efi --efi-directory=/boot --modules="tpm" --sbat /etc/grub.d/sbat.csv
+	sudo grub-install --target=x86_64-efi --efi-directory=/boot --modules=tpm --sbat /etc/grub.d/sbat.csv --bootloader-id=GRUB
 
 	## Sign everything
 	sudo sbsign --key ${MOKDIR}/MOK.key --cert ${MOKDIR}/MOK.crt --output /boot/vmlinuz-linux /boot/vmlinuz-linux
