@@ -24,6 +24,7 @@ IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 SKIP_CREATE_FS=false
 SKIP_MOUNT_FS=false
 SKIP_PACSTRAP=false
+SKIP_SECUREBOOT=false
 ONLY_MOUNT=false
 
 ## must be set here
@@ -283,11 +284,6 @@ create_swapfile
 ## Install base system + defined utils
 [[ $SKIP_PACSTRAP = true ]] || pacstrap /mnt base linux linux-firmware ${INSTALLSW}
 
-
-## we can create fstab now
-## TODO - run olny once
-genfstab -U /mnt >> /mnt/etc/fstab
-
 ## ---------------------------------------------
 ## Chroot to new install
 ## (we cannot chroot, so we will use ${CHROOT_PREFIX}
@@ -299,6 +295,32 @@ if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --
 if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}; fi
 echo "Make sure you dont lose this!!! Press any key to continue."
 read -rsn 1
+
+
+## update /etc/mkinitcpio.conf - add hooks
+sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
+
+## create /etc/crypttab.initramfs , add cryptrrot by UUID
+cp /mnt/etc/crypttab /mnt/etc/crypttab.initramfs
+echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
+
+## make initramfs
+${CHROOT_PREFIX} mkinitcpio -P
+
+## disable splash (DEBUG??)
+sed -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/ quiet//' /mnt/etc/default/grub
+enable_hibernate
+
+## install grub, config grub
+## SecureBoot runs its own grub-install
+[[ ${SKIP_SECUREBOOT} = true ]] && ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+## Secure boot
+[[ ${SKIP_SECUREBOOT} = true ]] || secure_boot
+${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
+
+## we can create fstab now
+## TODO - run olny once
+genfstab -U /mnt >> /mnt/etc/fstab
 
 ## Settimezone and hwclock
 ${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
@@ -316,29 +338,6 @@ if [[ -z ${HOSTNAME} ]]; then
 	HOSTNAME=$(get_confirmed_input "hostname")
 fi
 echo ${HOSTNAME} > /mnt/etc/hostname
-
-## update /etc/mkinitcpio.conf - add hooks
-sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
-
-## create /etc/crypttab.initramfs , add cryptrrot by UUID
-cp /mnt/etc/crypttab /mnt/etc/crypttab.initramfs
-echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
-
-## make initramfs
-${CHROOT_PREFIX} mkinitcpio -P
-
-## disable splash (DEBUG??)
-sed -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/ quiet//' /mnt/etc/default/grub
-enable_hibernate
-
-## install grub, config grub
-${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
-${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
-
-
-## Secure boot
-secure_boot
-
 
 ## TODO - check if wheel gropu is already in sudoers
 echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers.d/wheel
