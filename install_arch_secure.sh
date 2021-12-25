@@ -228,19 +228,14 @@ EOF
 	cp /mnt/usr/share/shim-signed/mmx64.efi /mnt/boot/EFI/GRUB/ 
 
 	## --- EFImanager set ---
-	## Check if we have shim EFI entry, if yes, dont install
-	## TODO: Override var?
+	## Check if we have shim EFI entry, if yes, rewrite
 	SHIM_ID=($(efibootmgr | grep Shim | sed 's/[^0-9]*//g'))
-	if [[ -n ${SHIM_ID[@]} ]]; then
-		echo "Shim EFI entry exist, will not make a new one"
-	else
-		for i in "${SHIM_ID[@]}"; do
-			efibootmgr -b $i -B
-		done
+	for i in "${SHIM_ID[@]}"; do
+		efibootmgr -b $i -B
+	done
 
-		## install boot entry 
-		efibootmgr --verbose --disk ${INSTALL_PARTITION} --part 1 --create --label "Shim" --loader /EFI/GRUB/BOOTx64.efi  
-	fi
+	## install boot entry 
+	efibootmgr --verbose --disk ${INSTALL_PARTITION} --part 1 --create --label "Shim" --loader /EFI/GRUB/BOOTx64.efi  
 
 	## create MoK and certs
 
