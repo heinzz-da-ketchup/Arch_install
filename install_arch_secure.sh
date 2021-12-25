@@ -31,13 +31,15 @@ CHROOT_PREFIX="arch-chroot /mnt"
 KEYMAP="cz-qwertz" 				
 
 USERSW="networkmanager vim git openssh"
-BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo"
+BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo sbsigntools"
 INSTALLSW="${USERSW} ${BASICUTILS}"
 
 ## Script will ask if empty
 INSTALL_PARTITION=""
 USERNAME=""
 HOSTNAME=""
+BUILDDIR=""
+MOKDIR=""
 
 ## ----------------------------------------------
 
@@ -182,11 +184,74 @@ enable_hibernate () {
 
 secure_boot () {
 
-	## isntall shim from AUR
-	## create MoK and certs
-	## Sign everything, copy to the right place
-	## EFImanager set
+	## --- Install  basic environment ---
+	## prepare build env
+	if [[ -z ${BUILDDIR} ]]; then
+		BUILDDIR="/mnt/home/${USERNAME}/builds"
+		BUILDDIR_CHROOT="/home/${USERNAME}/builds"
+	else
+		BUILDDIR_CHROOT=$(sed 's|/mnt||' <<< ${BUILDDIR})
+	fi
 
+	if [[ -z ${MOKDIR} ]]; then
+		MOKDIR="/mnt/home/${USERNAME}/.mok"
+		MOKDIR_CHROOT="/home/${USERNAME}/.mok"
+	else
+		MOKDIR_CHROOT=$(sed 's|/mnt||' <<< ${MOKDIR})
+	fi
+
+	## Do we have shim installed? 
+	${CHROOT_PREFIX} pacman -Qs shim-signed > /dev/null
+	## if not... 
+	if [[ $? -gt 0 ]]; then
+		mkdir -p ${BUILDDIR_CHROOT}/shim-signed
+		cp /root/Arch_install/shim-signed-*pkg.tar.zst ${BUILDDIR_CHROOT}/shim-signed/shim-signed*.pkg.tar.zst
+		${CHROOT_PREFIX} bash -c "pacman -U ${BUILDDIR_CHROOT}/shim-signed/shim-signed*.pkg.tar.zst"
+	fi
+
+	## --- Prepare shim loader ---
+	## Is this needed? grub now doesnt vreate BOOTx64.efi
+	if ! [[ -e /mnt/boot/EFI/GRUB/grubx64.efi ]]; then
+		cp /mnt/boot/EFI/GRUB/BOOTx64.efi  /mnt/boot/EFI/GRUB/grubx64.efi 
+	fi
+
+	cp /mnt/usr/share/shim-signed/shimx64.efi /mnt/boot/EFI/GRUB/BOOTx64.efi  
+	cp /mnt/usr/share/shim-signed/mmx64.efi /mnt/boot/EFI/GRUB/ 
+
+	## --- EFImanager set ---
+	## Check if we have shim EFI entry, if yes, dont install
+	## TODO: Override var?
+	SHIM_ID=($(efibootmgr | grep Shim | sed 's/[^0-9]*//g'))
+	if [[ -n ${SHIM_ID[@]} ]]; then
+		echo "Shim EFI entry exist, will not make a new one"
+	else
+		for i in "${SHIM_ID[@]}"; do
+			efibootmgr -b $i -B
+		done
+
+		## install boot entry 
+		efibootmgr --verbose --disk ${INSTALL_PARTITION} --part 1 --create --label "Shim" --loader /EFI/GRUB/BOOTx64.efi  
+	fi
+
+	## create MoK and certs
+
+	if ! [[ -e ${MOKDIR}/MOK.crt ]]; then
+		mkdir -p ${MOKDIR}
+		openssl req -newkey rsa:4096 -nodes -keyout ${MOKDIR}/MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=${HOSTNAME} Machine Owner Key" -out ${MOKDIR}/MOK.crt
+		openssl x509 -outform DER -in ${MOKDIR}/MOK.crt -out ${MOKDIR}/MOK.cer
+	fi
+
+	cp ${MOKDIR}/MOK.cer /mnt/boot/EFI/GRUB/
+
+	cat > /mnt/etc/grub.d/sbat.csv << EOF
+sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md
+grub,1,Free Software Foundation,grub,2.06,https://www.gnu.org/software/grub
+EOF
+	${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --modules=tpm --sbat /etc/grub.d/sbat.csv --bootloader-id=GRUB
+
+	## Sign everything
+	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/vmlinuz-linux /boot/vmlinuz-linux
+	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/EFI/GRUB/grubx64.efi /boot/EFI/GRUB/grubx64.efi
 }
 
 ## ----------------------------------------------
