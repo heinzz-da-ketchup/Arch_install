@@ -35,9 +35,9 @@ BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo"
 INSTALLSW="${USERSW} ${BASICUTILS}"
 
 ## Script will ask if empty
-INSTALL_PARTITION="/dev/nvme0n1"
-USERNAME="jhrubes"
-HOSTNAME="jhrubes-NTB"
+INSTALL_PARTITION=""
+USERNAME=""
+HOSTNAME=""
 
 ## ----------------------------------------------
 
@@ -179,6 +179,16 @@ enable_hibernate () {
 	PAGESIZE=$(${CHROOT_PREFIX} getconf PAGESIZE)
 	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume_offset=$(expr $SWAPFILE_PHYSICAL / $PAGESIZE)\"/" /mnt/etc/default/grub
 }
+
+secure_boot () {
+
+	## isntall shim from AUR
+	## create MoK and certs
+	## Sign everything, copy to the right place
+	## EFImanager set
+
+}
+
 ## ----------------------------------------------
 
 ## Main script flow
@@ -259,6 +269,11 @@ enable_hibernate
 ## install grub, config grub
 ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
 ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
+
+
+## Secure boot
+secure_boot
+
 
 ## TODO - check if wheel gropu is already in sudoers
 echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers.d/wheel
