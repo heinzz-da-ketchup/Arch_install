@@ -326,9 +326,11 @@ echo "We need to create non-root user."
 if [[ -z ${USERNAME} ]]; then
 	USERNAME=$(get_confirmed_input "username") 
 fi
-${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
-echo "Set password for "${USERNAME}
-${CHROOT_PREFIX} passwd ${USERNAME}
+if [[ -z $(grep ${USERNAME} /mnt/etc/passwd) ]]; then
+	${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
+	echo "Set password for "${USERNAME}
+	${CHROOT_PREFIX} passwd ${USERNAME}
+fi
 
 ## install grub, config grub
 ## SecureBoot runs its own grub-install
@@ -356,7 +358,7 @@ echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers.d/wheel
 chmod 0440 /mnt/etc/sudoers.d/wheel
 
 ## Disable predictable interface names
-ln -s /dev/null /mnt/etc/udev/rules.d/80-net-setup-link.rules
+[[ -e /mnt/etc/udev/rules.d/80-net-setup-link.rules ]] || ln -s /dev/null /mnt/etc/udev/rules.d/80-net-setup-link.rules
 
 ## Enable networkmanager
 ## TODO - check if networkmanager exists? 
