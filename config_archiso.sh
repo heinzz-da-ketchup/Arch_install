@@ -8,7 +8,21 @@ rm -r /mnt/archiso_custom
 cp -r /usr/share/archiso/configs/releng /mnt/archiso_custom
 
 ## Prepare packages and binary files to use
+pacman -Sy base-devel
+
 ## Get and build btrfs_map_physical
+if ! [[ -e ${SCRIPT_DIR}/btrfs_map_physical ]]; then
+	
+	mkdir -p ${BUILDDIR}
+	mkdir -p ${BUILDDIR}/btrfs_map_physical
+	cd ${BUILDDIR}/btrfs_map_physical
+
+	curl -LO https://github.com/osandov/osandov-linux/raw/master/scripts/btrfs_map_physical.c
+	gcc -O2 -o btrfs_map_physical btrfs_map_physical.c
+
+	cp btrfs_map_physical ${SCRIPT_DIR}
+	cd ${SCRIPT_DIR}
+fi
 
 ## get and makepkg for signed shim
 if ! [[ -e ${SCRIPT_DIR}/shim-signed-*pkg.tar.zst ]]; then
