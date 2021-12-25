@@ -206,10 +206,17 @@ secure_boot () {
 	${CHROOT_PREFIX} pacman -Qs shim-signed > /dev/null
 	## if not... 
 	if [[ $? -gt 0 ]]; then
-		mkdir -p ${BUILDDIR_CHROOT}/shim-signed
-		cp /root/Arch_install/shim-signed-*pkg.tar.zst ${BUILDDIR_CHROOT}/shim-signed/shim-signed*.pkg.tar.zst
+		mkdir -p ${BUILDDIR}/shim-signed
+		cp /root/Arch_install/shim-signed-*pkg.tar.zst ${BUILDDIR}/shim-signed/
 		${CHROOT_PREFIX} bash -c "pacman -U ${BUILDDIR_CHROOT}/shim-signed/shim-signed*.pkg.tar.zst"
 	fi
+
+	## install GRUB, we need to have it first
+	cat > /mnt/etc/grub.d/sbat.csv << EOF
+sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md
+grub,1,Free Software Foundation,grub,2.06,https://www.gnu.org/software/grub
+EOF
+	${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --modules=tpm --sbat /etc/grub.d/sbat.csv --bootloader-id=GRUB
 
 	## --- Prepare shim loader ---
 	## Is this needed? grub now doesnt vreate BOOTx64.efi
@@ -244,12 +251,6 @@ secure_boot () {
 	fi
 
 	cp ${MOKDIR}/MOK.cer /mnt/boot/EFI/GRUB/
-
-	cat > /mnt/etc/grub.d/sbat.csv << EOF
-sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md
-grub,1,Free Software Foundation,grub,2.06,https://www.gnu.org/software/grub
-EOF
-	${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --modules=tpm --sbat /etc/grub.d/sbat.csv --bootloader-id=GRUB
 
 	## Sign everything
 	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/vmlinuz-linux /boot/vmlinuz-linux
