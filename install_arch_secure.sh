@@ -475,4 +475,5 @@ chown -R ${USER_ID}:${USER_ID} /mnt/home/${USERNAME}/
 # if ! [[ ${FIDO2_DISABLE} = true ]]; then cryptsetup luksRemoveKey ${CRYPT_PARTITION}; fi
 
 ## We should have working system, lets try to go for it. = D
+notify_wait "Instalation complete, ready to reboot"
 reboot 
