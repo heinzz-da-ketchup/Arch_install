@@ -58,21 +58,31 @@ trap exit 1 ERR
 notify () {
 
     printf ${GREEN}
+    printf "##############################\n"
     printf "$1\n"
+    [[ $2 ]] && printf "\nPress any key to continue\n"
+    printf "##############################\n"
     printf ${NC}
+    if [[ -n $2 ]]; then read -rsn 1; fi
 }
 
 warn () {
 
     printf ${YELLOW}
+    printf "##############################\n"
     printf "$1\n"
+    [[ $2 ]] && printf "\nPress any key to continue\n"
+    printf "##############################\n"
     printf ${NC}
+    if [[ -n $2 ]]; then read -rsn 1; fi
 }
 
 error () {
 
     printf ${RED}
+    printf "##############################\n"
     printf "$1\n"
+    printf "##############################\n"
     printf ${NC}
     exit 1
 }
