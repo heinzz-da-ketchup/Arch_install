@@ -23,6 +23,7 @@ fi
 if ! [[ $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
 	mkdir -p ${BUILDDIR}
 	cd ${BUILDDIR}
+	rm -r shim-signed
 	git clone https://aur.archlinux.org/shim-signed.git
 	cd ${BUILDDIR}/shim-signed
 
@@ -75,4 +76,4 @@ echo "Passphrase=NebudouMitStenata" >> /mnt/archiso_custom/airootfs/var/lib/iwd/
 echo "git" >> /mnt/archiso_custom/packages.x86_64
 
 ## build archiso
-#sudo mkarchiso -v -w /tmp/archiso-tmp -o /tmp /mnt/archiso_custom
+sudo mkarchiso -v -w /tmp/archiso-tmp -o /tmp /mnt/archiso_custom
