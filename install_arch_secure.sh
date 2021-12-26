@@ -179,7 +179,7 @@ net_connect () {
 
     Tries=0
     while ! [[ $(ping -c2 -q archlinux.org 2>/dev/null) ]]; do
-	    echo "Internet connection not available, trying to connect to wi-fi"
+	    warn "Internet connection not available, trying to connect to wi-fi"
 
 	    WLAN=$(get_valid_input "iwctl device list" "wlan device name")
 
@@ -190,8 +190,7 @@ net_connect () {
 
 	    let "Tries++"
 	    if [[ $Tries -gt 3 ]]; then
-	    echo "Cannot connect, please fix internet connection and run script again."
-	    exit 1
+	    error "Cannot connect, please fix internet connection and run script again."
 	    fi
     done
 }
