@@ -60,10 +60,19 @@ notify () {
     printf ${GREEN}
     printf "##############################\n"
     printf "$1\n"
-    [[ $2 ]] && printf "\nPress any key to continue\n"
-    printf "##############################\n"
+    printf "##############################\n\n"
     printf ${NC}
-    if [[ -n $2 ]]; then read -rsn 1; fi
+}
+
+notify_wait () {
+
+    printf ${GREEN}
+    printf "##############################\n"
+    printf "$1\n"
+    printf "\nPress any key to continue\n"
+    printf "##############################\n\n"
+    printf ${NC}
+    read -rsn 1
 }
 
 warn () {
@@ -71,10 +80,19 @@ warn () {
     printf ${YELLOW}
     printf "##############################\n"
     printf "$1\n"
-    [[ $2 ]] && printf "\nPress any key to continue\n"
-    printf "##############################\n"
+    printf "##############################\n\n"
     printf ${NC}
-    if [[ -n $2 ]]; then read -rsn 1; fi
+}
+
+warn_wait () {
+
+    printf ${YELLOW}
+    printf "##############################\n"
+    printf "$1\n"
+    printf "\nPress any key to continue\n"
+    printf "##############################\n\n"
+    printf ${NC}
+    read -rsn 1
 }
 
 error () {
@@ -82,7 +100,7 @@ error () {
     printf ${RED}
     printf "##############################\n"
     printf "$1\n"
-    printf "##############################\n"
+    printf "##############################\n\n"
     printf ${NC}
     exit 1
 }
