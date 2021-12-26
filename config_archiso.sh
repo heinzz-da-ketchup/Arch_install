@@ -20,7 +20,7 @@ if ! [[ -e ${SCRIPT_DIR}/btrfs_map_physical ]]; then
 fi
 
 ## get and makepkg for signed shim
-if ! [[ -e ${SCRIPT_DIR}/shim-signed-*pkg.tar.zst ]]; then
+if ! [[ $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
 	mkdir -p ${BUILDDIR}
 	cd ${BUILDDIR}
 	git clone https://aur.archlinux.org/shim-signed.git
