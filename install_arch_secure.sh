@@ -31,6 +31,7 @@ SKIP_CREATE_FS=false
 SKIP_MOUNT_FS=false
 SKIP_PACSTRAP=false
 SKIP_SWAPFILE=false
+SKIP_HIBERNATE=false
 SKIP_SECUREBOOT=false
 ONLY_MOUNT=false
 
@@ -275,6 +276,8 @@ create_swapfile () {
 }
 
 enable_hibernate () {
+
+	notify "Configuring hibernation to swapfile"
 	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume=UUID=$(findmnt -no UUID -T ${SWAPFILE})\"/" /mnt/etc/default/grub
 	SWAPFILE_PHYSICAL=$(Arch_install/btrfs_map_physical ${SWAPFILE} | awk 'NR == 2 {print $9}')
 	PAGESIZE=$(${CHROOT_PREFIX} getconf PAGESIZE)
@@ -284,15 +287,18 @@ enable_hibernate () {
 secure_boot () {
 
 	## --- Install  basic environment ---
-	## prepare build env
-
 	## Do we have shim installed? 
 	${CHROOT_PREFIX} pacman -Qs shim-signed > /dev/null
 	## if not... 
 	if [[ $? -gt 0 ]]; then
-		mkdir -p ${BUILDDIR}/shim-signed
+		notify "Installing shim-signed from pre-built package.\nThis will also clone AUR git repo to ${BUILDDIR}."
+		mkdir -p ${BUILDDIR}
+		cd ${BUILDDIR}
+		rm -r shim-signed
+		git clone https://aur.archlinux.org/shim-signed.git
 		cp /root/Arch_install/shim-signed-*pkg.tar.zst ${BUILDDIR}/shim-signed/
 		${CHROOT_PREFIX} bash -c "pacman -U ${BUILDDIR_CHROOT}/shim-signed/shim-signed*.pkg.tar.zst"
+		cd /root
 	fi
 
 	## install GRUB, we need to have it first
@@ -300,10 +306,11 @@ secure_boot () {
 sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md
 grub,1,Free Software Foundation,grub,2.06,https://www.gnu.org/software/grub
 EOF
+	notify "Installing GRUB"
 	${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --modules=tpm --sbat /etc/grub.d/sbat.csv --bootloader-id=GRUB
 
 	## --- Prepare shim loader ---
-	## Is this needed? grub now doesnt vreate BOOTx64.efi
+	## Is this needed? grub now doesnt create BOOTx64.efi
 	if ! [[ -e /mnt/boot/EFI/GRUB/grubx64.efi ]]; then
 		cp /mnt/boot/EFI/GRUB/BOOTx64.efi  /mnt/boot/EFI/GRUB/grubx64.efi 
 	fi
@@ -313,6 +320,7 @@ EOF
 
 	## --- EFImanager set ---
 	## Check if we have shim EFI entry, if yes, rewrite
+	notify "Preparing EFI boot entry"
 	SHIM_ID=($(efibootmgr | grep Shim | sed 's/[^0-9]*//g'))
 	for i in "${SHIM_ID[@]}"; do
 		efibootmgr -b $i -B
@@ -324,6 +332,7 @@ EOF
 	## create MoK and certs
 
 	if ! [[ -e ${MOKDIR}/MOK.crt ]]; then
+		notify "Preparing Machine Owners Key for SecureBoot"
 		mkdir -p ${MOKDIR}
 		openssl req -newkey rsa:4096 -nodes -keyout ${MOKDIR}/MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=${HOSTNAME} Machine Owner Key" -out ${MOKDIR}/MOK.crt
 		openssl x509 -outform DER -in ${MOKDIR}/MOK.crt -out ${MOKDIR}/MOK.cer
@@ -332,6 +341,7 @@ EOF
 	cp ${MOKDIR}/MOK.cer /mnt/boot/EFI/GRUB/
 
 	## Sign everything
+	notify "Signing bootloader and startup image"
 	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/vmlinuz-linux /boot/vmlinuz-linux
 	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/EFI/GRUB/grubx64.efi /boot/EFI/GRUB/grubx64.efi
 }
@@ -366,7 +376,10 @@ fi
 [[ $SKIP_SWAPFILE = true ]] || create_swapfile
 
 ## Install base system + defined utils
-[[ $SKIP_PACSTRAP = true ]] || pacstrap /mnt base linux linux-firmware ${INSTALLSW}
+if ! [[ $SKIP_PACSTRAP = true ]]; then
+    notify_wait "installing base system with \n 'pacstrap /mnt base linux linux-firmware ${INSTALLSW}'"
+    pacstrap /mnt base linux linux-firmware ${INSTALLSW}
+fi
 
 ## ---------------------------------------------
 ## Chroot to new install
@@ -374,15 +387,17 @@ fi
 ## ---------------------------------------------
 
 ## Enroll fido2 key to cryptsetup (if we are using one)
-if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --fido2-device=auto ${CRYPT_PARTITION}; fi
-## and generate recovery key
-if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}; fi
-echo "Make sure you dont lose this!!! Press any key to continue."
-read -rsn 1
+if ! [[ ${FIDO2_DISABLE} = true ]]; then 
+    notify "Enrolling FIDO2 key for enrcrypted drive"
+    ${CHROOT_PREFIX} systemd-cryptenroll --fido2-device=auto ${CRYPT_PARTITION}
+    ${CHROOT_PREFIX} systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}
+    warn_wait "This is your recovery key.\nMake sure you dont lose this!!!"
+fi
 
 ## set locales and keymap
 ## TODO: for locale in locases add... 
 sed -i 's/^#cs_CZ.UTF-8 UTF-8/cs_CZ.UTF-8 UTF-8/ ; s/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /mnt/etc/locale.gen
+notify "Generating Locales"
 ${CHROOT_PREFIX} locale-gen
 echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
 echo "KEYMAP="${KEYMAP} > /mnt/etc/vconsole.conf
@@ -395,27 +410,32 @@ cp /mnt/etc/crypttab /mnt/etc/crypttab.initramfs
 echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
 
 ## make initramfs
+notify "generate initramfs"
 ${CHROOT_PREFIX} mkinitcpio -P
 
 ## disable splash (DEBUG??)
 sed -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/ quiet//' /mnt/etc/default/grub
-enable_hibernate
+
+if [[ ${SKIP_SWAPFILE} = true || ${SKIP_HIBERNATE} = true ]]; then enable_hibernate; fi
 
 ## TODO - Ask to skip if superuser already exists
 ## Create user - ask for username (if not provided in variable) and password
 ## Need to create user before SecureBOokt because of ~/ used 
-echo "We need to create non-root user."
+notify "Creating non-root user."
 if [[ -z $(grep ${USERNAME} /mnt/etc/passwd) ]]; then
 	${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
-	echo "Set password for "${USERNAME}
 	${CHROOT_PREFIX} passwd ${USERNAME}
 fi
 
 ## install grub, config grub
 ## SecureBoot runs its own grub-install
-[[ ${SKIP_SECUREBOOT} = true ]] && ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
-## Secure boot
-[[ ${SKIP_SECUREBOOT} = true ]] || secure_boot
+if [[ ${SKIP_SECUREBOOT} = true ]]; then
+    notify "Installing GRUB"
+    ${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --bootloader-id=GRUB
+else
+   secure_boot
+fi
+notify "Configuring GRUB"
 ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
 
 ## we can create fstab now
@@ -429,7 +449,7 @@ ${CHROOT_PREFIX} hwclock --systohc
 ## set hosntame
 echo ${HOSTNAME} > /mnt/etc/hostname
 
-## TODO - check if wheel gropu is already in sudoers
+## TODO - check if wheel group is already in sudoers
 echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers.d/wheel
 chmod 0440 /mnt/etc/sudoers.d/wheel
 
