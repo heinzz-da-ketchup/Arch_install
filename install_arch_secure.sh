@@ -42,12 +42,29 @@ USERSW="networkmanager vim git openssh"
 BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo sbsigntools"
 INSTALLSW="${USERSW} ${BASICUTILS}"
 
-## Script will ask if empty
+## Script will ask or use defaults if empty
 INSTALL_PARTITION=""
 USERNAME=""
 HOSTNAME=""
 BUILDDIR=""
 MOKDIR=""
+
+## ----------------------------------------------
+## Set some sane defaults if needed
+
+if [[ -z ${BUILDDIR} ]]; then
+	BUILDDIR="/mnt/home/${USERNAME}/builds"
+	BUILDDIR_CHROOT="/home/${USERNAME}/builds"
+else
+	BUILDDIR_CHROOT=$(sed 's|/mnt||' <<< ${BUILDDIR})
+fi
+
+if [[ -z ${MOKDIR} ]]; then
+	MOKDIR="/mnt/home/${USERNAME}/.mok"
+	MOKDIR_CHROOT="/home/${USERNAME}/.mok"
+else
+	MOKDIR_CHROOT=$(sed 's|/mnt||' <<< ${MOKDIR})
+fi
 
 ## ----------------------------------------------
 
@@ -133,12 +150,22 @@ get_confirmed_input () {
 	echo ${Input}
 }
 
-get_install_partition () {
+set_variables () {
+
+    notify_wait "We need to set some basic variables"
 
     ## show lsblk, select where to partition
     [[ -z $INSTALL_PARTITION ]] && INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
     CRYPT_PARTITION=${INSTALL_PARTITION}p2
     BOOT_PARTITION=${INSTALL_PARTITION}p1
+
+    if [[ -z ${USERNAME} ]]; then
+	    USERNAME=$(get_confirmed_input "username") 
+    fi
+
+    if [[ -z ${HOSTNAME} ]]; then
+	    HOSTNAME=$(get_confirmed_input "hostname")
+    fi
 }
 ## ----------------------------------------------
 
@@ -244,19 +271,6 @@ secure_boot () {
 
 	## --- Install  basic environment ---
 	## prepare build env
-	if [[ -z ${BUILDDIR} ]]; then
-		BUILDDIR="/mnt/home/${USERNAME}/builds"
-		BUILDDIR_CHROOT="/home/${USERNAME}/builds"
-	else
-		BUILDDIR_CHROOT=$(sed 's|/mnt||' <<< ${BUILDDIR})
-	fi
-
-	if [[ -z ${MOKDIR} ]]; then
-		MOKDIR="/mnt/home/${USERNAME}/.mok"
-		MOKDIR_CHROOT="/home/${USERNAME}/.mok"
-	else
-		MOKDIR_CHROOT=$(sed 's|/mnt||' <<< ${MOKDIR})
-	fi
 
 	## Do we have shim installed? 
 	${CHROOT_PREFIX} pacman -Qs shim-signed > /dev/null
@@ -318,12 +332,14 @@ cd /root
 ## Keymap for instalation ISO - mainly for passphrases
 loadkeys ${KEYMAP}
 
+## Lets set all the vars if we need to
+if [[ -z ${INSTALL_PARTITION}  ||  -z ${USERNAME} || -z ${HOSTNAME} ]]; then set_variables; fi
+
 net_connect
 
 ## Set time via ntp
 timedatectl set-ntp true
 
-get_install_partition
 ## DEBUG - option to only mount prepared FS, for debbuging
 if [[ ${ONLY_MOUNT} = true ]]; then
 	mount_filesystem
@@ -373,9 +389,6 @@ enable_hibernate
 ## Create user - ask for username (if not provided in variable) and password
 ## Need to create user before SecureBOokt because of ~/ used 
 echo "We need to create non-root user."
-if [[ -z ${USERNAME} ]]; then
-	USERNAME=$(get_confirmed_input "username") 
-fi
 if [[ -z $(grep ${USERNAME} /mnt/etc/passwd) ]]; then
 	${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
 	echo "Set password for "${USERNAME}
@@ -398,9 +411,6 @@ ${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
 ${CHROOT_PREFIX} hwclock --systohc
 
 ## set hosntame
-if [[ -z ${HOSTNAME} ]]; then
-	HOSTNAME=$(get_confirmed_input "hostname")
-fi
 echo ${HOSTNAME} > /mnt/etc/hostname
 
 ## TODO - check if wheel gropu is already in sudoers
