@@ -17,6 +17,12 @@
 ## ----------------------------------------------
 
 
+## Colors! pretty, pretty colors! = )
+RED='\033[0;31m'
+YELLOW='\033[1;33m'
+GREEN='\033[0;32m'
+NC='\033[0m'
+
 ## Some control variables
 ## True/false control flow
 FIDO2_DISABLE=false
@@ -49,6 +55,28 @@ MOKDIR=""
 trap exit 1 ERR
 
 ## Some utility functions
+notify () {
+
+    printf ${GREEN}
+    printf "$1\n"
+    printf ${NC}
+}
+
+warn () {
+
+    printf ${YELLOW}
+    printf "$1\n"
+    printf ${NC}
+}
+
+error () {
+
+    printf ${RED}
+    printf "$1\n"
+    printf ${NC}
+    exit 1
+}
+
 get_valid_input (){
 
 	echo ${1} ${2} >&2
@@ -92,7 +120,7 @@ get_install_partition () {
 ## (We presume that we have wireless card working)
 net_connect () {
 
-    if [[ ${IPV6_DISABLE} = true ]]; then sysctl net.ipv6.conf.all.disable_ipv6=1; fi	## Disable IPv6 on demand before checking and setting internet connection
+    if [[ ${IPV6_DISABLE} = true ]]; then sysctl net.ipv6.conf.all.disable_ipv6=1 >/dev/null; notify "IPv6 Disabled"; fi	## Disable IPv6 on demand before checking and setting internet connection
 
     Tries=0
     while ! [[ $(ping -c2 -q archlinux.org 2>/dev/null) ]]; do
@@ -261,7 +289,6 @@ cd /root
 
 ## Keymap for instalation ISO - mainly for passphrases
 loadkeys ${KEYMAP}
-
 
 net_connect
 
