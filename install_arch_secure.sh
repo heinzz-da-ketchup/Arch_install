@@ -200,18 +200,21 @@ net_connect () {
 create_filesystem () {
 
     ## Partition disk, i dont care about other partitioning schemes or encrypted boot. Swapping to a swapfile.
+    notify "Partitioning device"
     parted ${INSTALL_PARTITION} mklabel gpt
     parted ${INSTALL_PARTITION} mkpart EFI fat32 0% 512MB
     parted ${INSTALL_PARTITION} set 1 esp on
     parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100%
 
     ## Prepare LUKS2 encrypted root
-    echo "Preparing encrypted volume"
-    if ! [[ ${FIDO2_DISABLE} = true ]]; then echo "No need to set strong passphrase, it will later be replaced by FIDO2 token and recovery key"; fi
+    notify "Preparing encrypted volume"
+    if ! [[ ${FIDO2_DISABLE} = true ]]; then warn_wait "No need to set strong passphrase, it will later be replaced by FIDO2 token and recovery key"; fi
     cryptsetup luksFormat ${CRYPT_PARTITION}
+    notify "Encrypted volume created, please onlock it"
     cryptsetup open ${CRYPT_PARTITION} cryptroot
 
     ## format root partition, prepare btrfs subvolumes
+    notify "Creating btfrs filesystem"
     mkfs.btrfs -L root /dev/mapper/cryptroot
     mount /dev/mapper/cryptroot /mnt
     btrfs subvolume create /mnt/@
@@ -222,6 +225,7 @@ create_filesystem () {
     umount /mnt
 
     ## Format /boot partition
+    notify "Formating boot partition"
     mkfs.fat -F 32 ${BOOT_PARTITION}
 }
 
@@ -342,8 +346,10 @@ timedatectl set-ntp true
 ## DEBUG - option to only mount prepared FS, for debbuging
 if [[ ${ONLY_MOUNT} = true ]]; then
 	mount_filesystem
+	notify "Filesystems mounted"
 	exit 0
 fi
+
 [[ $SKIP_CREATE_FS = true ]] || create_filesystem
 [[ $SKIP_MOUNT_FS = true ]] || mount_filesystem
 [[ $SKIP_SWAPFILE = true ]] || create_swapfile
