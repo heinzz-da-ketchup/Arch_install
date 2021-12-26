@@ -208,15 +208,16 @@ create_filesystem () {
 
     ## Partition disk, i dont care about other partitioning schemes or encrypted boot. Swapping to a swapfile.
     notify "Partitioning device"
-    parted ${INSTALL_PARTITION} mklabel gpt
-    parted ${INSTALL_PARTITION} mkpart EFI fat32 0% 512MB
-    parted ${INSTALL_PARTITION} set 1 esp on
-    parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100%
+    parted ${INSTALL_PARTITION} mklabel gpt >/dev/null
+    parted ${INSTALL_PARTITION} mkpart EFI fat32 0% 512MB >/dev/null
+    parted ${INSTALL_PARTITION} set 1 esp on >/dev/null
+    parted ${INSTALL_PARTITION} mkpart LUKS 512MB 100% >/dev/null
 
     ## Prepare LUKS2 encrypted root
     notify "Preparing encrypted volume"
     if ! [[ ${FIDO2_DISABLE} = true ]]; then warn_wait "No need to set strong passphrase, it will later be replaced by FIDO2 token and recovery key"; fi
     cryptsetup luksFormat ${CRYPT_PARTITION}
+    mount -o subvol=@ /dev/mapper/cryptroot /mnt
     notify "Encrypted volume created, please unlock it"
     cryptsetup open ${CRYPT_PARTITION} cryptroot
 
@@ -240,11 +241,12 @@ create_filesystem () {
 mount_filesystem () {
 
     if ! [[ -e /dev/mapper/cryptroot ]]; then
-	notify "please unlock cryptroot"
+	notify "Please unlock cryptroot"
 	cryptsetup open ${CRYPT_PARTITION} cryptroot
     fi
 
     # Create all needed mountpoints
+    mount -o subvol=@ /dev/mapper/cryptroot /mnt
     mkdir -p /mnt/boot
     mkdir -p /mnt/home
     mkdir -p /mnt/.snapshots
@@ -252,7 +254,6 @@ mount_filesystem () {
     mkdir -p ${SWAPDIR}
 
     ## Mount all prepared partitions
-    mount -o subvol=@ /dev/mapper/cryptroot /mnt
     mount ${BOOT_PARTITION} /mnt/boot
     mount -o subvol=@home /dev/mapper/cryptroot /mnt/home
     mount -o subvol=@snapshots /dev/mapper/cryptroot /mnt/.snapshots
@@ -379,6 +380,7 @@ fi
 if ! [[ $SKIP_PACSTRAP = true ]]; then
     notify_wait "installing base system with \n 'pacstrap /mnt base linux linux-firmware ${INSTALLSW}'"
     pacstrap /mnt base linux linux-firmware ${INSTALLSW}
+    notify "Base system succesfully installed"
 fi
 
 ## ---------------------------------------------
@@ -410,7 +412,7 @@ cp /mnt/etc/crypttab /mnt/etc/crypttab.initramfs
 echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
 
 ## make initramfs
-notify "generate initramfs"
+notify "Generating initramfs"
 ${CHROOT_PREFIX} mkinitcpio -P
 
 ## disable splash (DEBUG??)
