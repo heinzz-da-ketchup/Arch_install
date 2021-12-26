@@ -43,7 +43,7 @@ if ! [[ -e ${SCRIPT_DIR}/shim-signed-*pkg.tar.zst ]]; then
 	cd ${SCRIPT_DIR}
 fi
 
-rm -r /mnt/archiso_custom
+sudo rm -r /mnt/archiso_custom
 
 ## copy profile
 sudo cp -r /usr/share/archiso/configs/releng /mnt/archiso_custom
@@ -75,4 +75,4 @@ echo "Passphrase=NebudouMitStenata" >> /mnt/archiso_custom/airootfs/var/lib/iwd/
 echo "git" >> /mnt/archiso_custom/packages.x86_64
 
 ## build archiso
-sudo mkarchiso -v -w /tmp/archiso-tmp -o /tmp /mnt/archiso_custom
+#sudo mkarchiso -v -w /tmp/archiso-tmp -o /tmp /mnt/archiso_custom
