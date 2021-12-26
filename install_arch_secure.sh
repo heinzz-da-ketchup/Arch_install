@@ -210,7 +210,7 @@ create_filesystem () {
     notify "Preparing encrypted volume"
     if ! [[ ${FIDO2_DISABLE} = true ]]; then warn_wait "No need to set strong passphrase, it will later be replaced by FIDO2 token and recovery key"; fi
     cryptsetup luksFormat ${CRYPT_PARTITION}
-    notify "Encrypted volume created, please onlock it"
+    notify "Encrypted volume created, please unlock it"
     cryptsetup open ${CRYPT_PARTITION} cryptroot
 
     ## format root partition, prepare btrfs subvolumes
@@ -232,21 +232,25 @@ create_filesystem () {
 ## For now fully hardcoded
 mount_filesystem () {
 
-    [[ -e /dev/mapper/cryptroot ]] || cryptsetup open ${CRYPT_PARTITION} cryptroot
+    if ! [[ -e /dev/mapper/cryptroot ]]; then
+	notify "please unlock cryptroot"
+	cryptsetup open ${CRYPT_PARTITION} cryptroot
+    fi
+
+    # Create all needed mountpoints
+    mkdir -p /mnt/boot
+    mkdir -p /mnt/home
+    mkdir -p /mnt/.snapshots
+    mkdir -p /mnt/var/cache/pacman/pkg
+    mkdir -p /mnt/swap
 
     ## Mount all prepared partitions
     mount -o subvol=@ /dev/mapper/cryptroot /mnt
-    mkdir -p /mnt/boot
     mount ${BOOT_PARTITION} /mnt/boot
-    mkdir -p /mnt/home
     mount -o subvol=@home /dev/mapper/cryptroot /mnt/home
-    mkdir -p /mnt/.snapshots
     mount -o subvol=@snapshots /dev/mapper/cryptroot /mnt/.snapshots
-    mkdir -p /mnt/var/cache/pacman/pkg
     mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
-    mkdir -p /mnt/swap
     mount -o subvol=@swap /dev/mapper/cryptroot /mnt/swap
-
 }
 
 ## Create swap file
@@ -346,7 +350,7 @@ timedatectl set-ntp true
 ## DEBUG - option to only mount prepared FS, for debbuging
 if [[ ${ONLY_MOUNT} = true ]]; then
 	mount_filesystem
-	notify "Filesystems mounted"
+	notify "Filesystems mounted, exiting."
 	exit 0
 fi
 
