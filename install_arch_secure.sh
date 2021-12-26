@@ -43,11 +43,12 @@ BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo s
 INSTALLSW="${USERSW} ${BASICUTILS}"
 
 ## Script will ask or use defaults if empty
-INSTALL_PARTITION=""
+INSTALL_PARTITION=""		## As a full path, eg. "/dev/sdb"
 USERNAME=""
 HOSTNAME=""
-BUILDDIR=""
-MOKDIR=""
+BUILDDIR=""			## Path in install environment, eg "/mnt/path/to/file"
+MOKDIR=""			## ---------------------- // ------------------------
+SWAPFILE=""			## ---------------------- // ------------------------
 
 ## ----------------------------------------------
 ## Set some sane defaults if needed
@@ -65,6 +66,11 @@ if [[ -z ${MOKDIR} ]]; then
 else
 	MOKDIR_CHROOT=$(sed 's|/mnt||' <<< ${MOKDIR})
 fi
+
+if [[ -z ${SWAPFILE} ]]; then
+	SWAPFILE="/mnt/swap/swapfile"
+fi
+SWAPDIR=$(grep -o '.*/'<<< ${SWAPFILE})
 
 ## ----------------------------------------------
 
@@ -242,7 +248,7 @@ mount_filesystem () {
     mkdir -p /mnt/home
     mkdir -p /mnt/.snapshots
     mkdir -p /mnt/var/cache/pacman/pkg
-    mkdir -p /mnt/swap
+    mkdir -p ${SWAPDIR}
 
     ## Mount all prepared partitions
     mount -o subvol=@ /dev/mapper/cryptroot /mnt
@@ -250,26 +256,27 @@ mount_filesystem () {
     mount -o subvol=@home /dev/mapper/cryptroot /mnt/home
     mount -o subvol=@snapshots /dev/mapper/cryptroot /mnt/.snapshots
     mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
-    mount -o subvol=@swap /dev/mapper/cryptroot /mnt/swap
+    mount -o subvol=@swap /dev/mapper/cryptroot ${SWAPDIR}
 }
 
 ## Create swap file
 create_swapfile () {
 
-	chmod 700 /mnt/swap
-	truncate -s 0 /mnt/swap/swapfile
-	chattr +C /mnt/swap/swapfile
-	btrfs property set /mnt/swap/swapfile compression none
-	fallocate -l $(free -h | awk 'NR == 2 {print $2}' | sed 's/i//' ) /mnt/swap/swapfile
-	chmod 600 /mnt/swap/swapfile
-	mkswap /mnt/swap/swapfile
-	swapon /mnt/swap/swapfile	
+	notify "Preparing swap file at ${SWAPFILE}"
+	chmod 700 ${SWAPDIR}
+	truncate -s 0 ${SWAPFILE}
+	chattr +C ${SWAPFILE}
+	btrfs property set ${SWAPFILE} compression none
+	fallocate -l $(free -h | awk 'NR == 2 {print $2}' | sed 's/i//' ) ${SWAPFILE}
+	chmod 600 ${SWAPFILE}
+	mkswap ${SWAPFILE}
+	swapon ${SWAPFILE}	
 
 }
 
 enable_hibernate () {
-	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume=UUID=$(findmnt -no UUID -T /mnt/swap/swapfile)\"/" /mnt/etc/default/grub
-	SWAPFILE_PHYSICAL=$(Arch_install/btrfs_map_physical /mnt/swap/swapfile | awk 'NR == 2 {print $9}')
+	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume=UUID=$(findmnt -no UUID -T ${SWAPFILE})\"/" /mnt/etc/default/grub
+	SWAPFILE_PHYSICAL=$(Arch_install/btrfs_map_physical ${SWAPFILE} | awk 'NR == 2 {print $9}')
 	PAGESIZE=$(${CHROOT_PREFIX} getconf PAGESIZE)
 	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume_offset=$(expr $SWAPFILE_PHYSICAL / $PAGESIZE)\"/" /mnt/etc/default/grub
 }
