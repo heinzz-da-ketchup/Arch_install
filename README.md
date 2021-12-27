@@ -2,8 +2,8 @@ Arch Linux reasonably secure instalation script
 -----
 
 This is a collection of scripts made to simplify installation of Arch Linux, using SecureBoot, full disk encryption (excluding `/boot`), btrfs including snapshots and swapfile hibernation, and FIDO2 token used as a master key both for LUKS (disk encryption) and PAM (linux user control). It is aimed mainly at laptops, because i don't even own a proper desktop PC.. = )\
+While researching how to configure Arch linux installation in the ways i wanted, i have found out that information sources are sometimes quite chaotic, and sorting out what do I need to do for some non-standard configuration was at times a bit puzzling. I hope, that this repo can help someone (or future me) to work out the kinks and details of their own custom Arch setup.\
 I have decided to write this as a practice project and it is my first bigger bash project that i've published, so please keep that in mind. = )
-While researching how to configure Arch linux installation in the ways i wanted, i have found out that information sources are sometimes quite chaotic, and sorting out what do I need to do for some non-standard configuration was at times a bit puzzling. I hope, that this repo can help someone (or future me) to work out the kinks and details of their own custom Arch setup.
 
 ### Features
 *Disclaimer: This tool was written mainly with MY OWN use-case in mind, and was never intended to replace distribution's installer. Please keep that in mind. = )*
