@@ -122,37 +122,59 @@ warn_wait () {
 error () {
 
     printf ${RED}
-    printf "##############################\n"
+    printf "\n##############################\n"
     printf "$1\n"
     printf "##############################\n\n"
     printf ${NC}
     exit 1
 }
 
+## Ask for input and make user confirm it
+## Argument #1 - string to use in prompt ("Please set $ARG", "Wrong $ARG")
 get_valid_input (){
 
-	echo ${1} ${2} >&2
 	Prompt=$( ${1} | tee /dev/tty)
 	Input="?"
 
-	while ! [[ $(grep ${Input} <<< ${Prompt} 2>/dev/null) ]]; do
-		echo "Please set "${2} >&2
+	printf ${GREEN}
+	printf "\n##############################\n"
+
+	while ! [[ $(grep -w ${Input} <<< ${Prompt} 2>/dev/null) ]]; do
+		printf ${GREEN}"Please set ${2}\n"${NC}
 		read Input
-		[[ $(grep ${Input} <<< ${Prompt} 2>/dev/null) ]] || echo "Wrong "${2} >&2
+
+		if ! [[ $(grep -w ${Input} <<< ${Prompt} 2>/dev/null) ]]; then
+		    printf ${RED}"Wrong ${2}\n\n"${NC}
+		fi
 	done
+
+	printf ${GREEN}
+	printf "##############################\n\n"
+	printf ${NC}
 
 	echo ${Input}
 }
 
+## Ask for input, must be a part of an output of specified command
+## Argument #1 - Command to use
+## Argument #2 . String to use in prompt ("Please set $ARG")
 get_confirmed_input () {
 
 	Confirm=""
+	printf ${GREEN}
+	printf "\n##############################\n"
+
 	while ! [[ ${Confirm} == "y" ]]; do
-		echo "Please set $1:" >&2
+		printf ${GREEN}"Please set $1:\n"${NC}
 		read Input
-		echo "is "${Input}" correct? y/n" >&2
+
+		printf ${GREEN}"is \""${YELLOW}"${Input}"${GREEN}"\" correct? y/n \n"${NC}
 		read Confirm
 	done
+
+	printf ${GREEN}
+	printf "##############################\n\n"
+	printf ${NC}
 
 	echo ${Input}
 }
@@ -174,9 +196,10 @@ set_variables () {
 	    HOSTNAME=$(get_confirmed_input "hostname")
     fi
 }
-## ----------------------------------------------
 
+## ----------------------------------------------
 ## Main functions
+## ----------------------------------------------
 
 ## Check connection, if not online, try to connect to wi-fi.
 ## (We presume that we have wireless card working)
