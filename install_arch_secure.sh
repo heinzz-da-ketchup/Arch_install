@@ -267,10 +267,11 @@ fi
 ## (we cannot chroot, so we will use ${CHROOT_PREFIX}
 ## ---------------------------------------------
 
-## Enroll fido2 key to cryptsetup (if we are using one)
+## Enroll fido2 key to cryptsetup (if we are using one).
+## To prevent duplicate entries, we first remove all fido2 tokens, then enroll new one.
 if ! [[ ${FIDO2_DISABLE} = true ]]; then 
     notify "Enrolling FIDO2 key for enrcrypted drive"
-    ${CHROOT_PREFIX} systemd-cryptenroll --fido2-device=auto ${CRYPT_PARTITION}
+    ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=fido2 --fido2-device=auto ${CRYPT_PARTITION}
     ${CHROOT_PREFIX} systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}
     warn_wait "This is your recovery key.\nMake sure you dont lose it!!!"
 fi
@@ -354,7 +355,7 @@ chown -R ${USER_ID}:${USER_ID} /mnt/home/${USERNAME}/
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
 ## DEBUG - not yet, debuging and token doesnt work in arch live iso... 
-# if ! [[ ${FIDO2_DISABLE} = true ]]; then cryptsetup luksRemoveKey ${CRYPT_PARTITION}; fi
+# if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=password ${CRYPT_PARTITION}; fi
 
 ## We should have working system, lets try to go for it. = D
 notify_wait "Installation complete, ready to reboot"
