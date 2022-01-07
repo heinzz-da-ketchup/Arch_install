@@ -303,10 +303,12 @@ if [[ ${SKIP_SWAPFILE} = true || ${SKIP_HIBERNATE} = true ]]; then enable_hibern
 ## TODO - Ask to skip if superuser already exists
 ## Create user - ask for username (if not provided in variable) and password
 ## Need to create user before SecureBoot because of ~/ used 
-notify "Creating non-root administrator user ${USERNAME}."
-if [[ -z $(grep ${USERNAME} /mnt/etc/passwd) ]]; then
+if ! id ${USERNAME} &>/dev/null; then
+	notify "Creating non-root administrator user ${USERNAME}."
 	${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
-	${CHROOT_PREFIX} passwd ${USERNAME}
+	until ${CHROOT_PREFIX} passwd ${USERNAME}; do
+	    warn "Password not set, try again!"
+	done
 fi
 
 ## install grub, config grub
@@ -333,9 +335,11 @@ ${CHROOT_PREFIX} hwclock --systohc
 ## set hosntame
 echo ${HOSTNAME} > /mnt/etc/hostname
 
-## TODO - check if wheel group is already in sudoers
-echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers.d/wheel
-chmod 0440 /mnt/etc/sudoers.d/wheel
+## Enable sudo for group `wheel`
+if ! [[ -e /mnt/sudoers/wheel ]]; then
+    echo "%wheel ALL=(ALL) ALL" >> /mnt/etc/sudoers.d/wheel
+    chmod 0440 /mnt/etc/sudoers.d/wheel
+fi
 
 ## Disable predictable interface names
 [[ -e /mnt/etc/udev/rules.d/80-net-setup-link.rules ]] || ln -s /dev/null /mnt/etc/udev/rules.d/80-net-setup-link.rules
