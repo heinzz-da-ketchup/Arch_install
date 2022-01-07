@@ -1,3 +1,4 @@
+#!/bin/bash
 ## ---------------------------------------------
 ## Scritp to install arch-linux on LUKS encrypted btrfs drive
 ## Features (hopefully): 
@@ -13,7 +14,7 @@
 ##	Different WM and so on
 ##	Non-UEFI install (don't even try, script wont work!)
 ##
-## Auhtor: Jan Hrubes, 2021
+## Auhtor: Jan Hrubes, 2021-2022
 ## ----------------------------------------------
 
 
@@ -24,7 +25,6 @@ GREEN='\033[0;32m'
 NC='\033[0m'
 
 ## Some control variables
-## True/false control flow
 FIDO2_DISABLE=false
 IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 SKIP_CREATE_FS=false
@@ -33,15 +33,14 @@ SKIP_PACSTRAP=false
 SKIP_SWAPFILE=false
 SKIP_HIBERNATE=false
 SKIP_SECUREBOOT=false
-ONLY_MOUNT=false
+ONLY_MOUNT=false				## DEBUG - Stop script after mounting filesystems
 
-## must be set here
+## Must be set here
 CHROOT_PREFIX="arch-chroot /mnt"
 KEYMAP="cz-qwertz" 				
 
 USERSW="networkmanager vim git openssh"
 BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo sbsigntools"
-INSTALLSW="${USERSW} ${BASICUTILS}"
 
 ## Script will ask or use defaults if empty
 INSTALL_PARTITION=""		## As a full path, eg. "/dev/sdb"
@@ -52,7 +51,8 @@ MOKDIR=""			## ---------------------- // ------------------------
 SWAPFILE=""			## ---------------------- // ------------------------
 
 ## ----------------------------------------------
-## Set some sane defaults if needed
+## Prepare rest of variables, set some sane defaults if needed
+## ----------------------------------------------
 
 if [[ -z ${BUILDDIR} ]]; then
 	BUILDDIR="/mnt/home/${USERNAME}/builds"
@@ -71,18 +71,21 @@ fi
 if [[ -z ${SWAPFILE} ]]; then
 	SWAPFILE="/mnt/swap/swapfile"
 fi
+
 SWAPDIR=$(grep -o '.*/'<<< ${SWAPFILE})
+INSTALLSW="${USERSW} ${BASICUTILS}"
+
+## End on error or SIGINT- DEBUG
+trap exit 1 ERR
+trap exit 1 SIGINT
 
 ## ----------------------------------------------
-
-## End on error - DEBUG
-trap exit 1 ERR
-
 ## Some utility functions
+## ----------------------------------------------
 notify () {
 
     printf ${GREEN}
-    printf "##############################\n"
+    printf "\n##############################\n"
     printf "$1\n"
     printf "##############################\n\n"
     printf ${NC}
@@ -91,7 +94,7 @@ notify () {
 notify_wait () {
 
     printf ${GREEN}
-    printf "##############################\n"
+    printf "\n##############################\n"
     printf "$1\n"
     printf "\nPress any key to continue\n"
     printf "##############################\n\n"
@@ -102,7 +105,7 @@ notify_wait () {
 warn () {
 
     printf ${YELLOW}
-    printf "##############################\n"
+    printf "\n##############################\n"
     printf "$1\n"
     printf "##############################\n\n"
     printf ${NC}
@@ -111,7 +114,7 @@ warn () {
 warn_wait () {
 
     printf ${YELLOW}
-    printf "##############################\n"
+    printf "\n##############################\n"
     printf "$1\n"
     printf "\nPress any key to continue\n"
     printf "##############################\n\n"
@@ -229,8 +232,8 @@ net_connect () {
 ## and prepare btrfs with subvolumes. 
 create_filesystem () {
 
-    ## Partition disk, i dont care about other partitioning schemes or encrypted boot. Swapping to a swapfile.
-    notify "Partitioning device"
+    ## Partition disk, i dont care about other partitioning schemes or encrypted /boot. Swapping to a swapfile.
+    notify "Partitioning device ${INSTALL_PARTITION}"
     parted ${INSTALL_PARTITION} mklabel gpt >/dev/null
     parted ${INSTALL_PARTITION} mkpart EFI fat32 0% 512MB >/dev/null
     parted ${INSTALL_PARTITION} set 1 esp on >/dev/null
@@ -260,7 +263,8 @@ create_filesystem () {
     mkfs.fat -F 32 ${BOOT_PARTITION}
 }
 
-## For now fully hardcoded
+## Mount all prepared filesystems.
+## For now (for ever?) fully hardcoded
 mount_filesystem () {
 
     if ! [[ -e /dev/mapper/cryptroot ]]; then
@@ -284,7 +288,7 @@ mount_filesystem () {
     mount -o subvol=@swap /dev/mapper/cryptroot ${SWAPDIR}
 }
 
-## Create swap file
+## Create swap file, same size as RAM, to enable hybernation
 create_swapfile () {
 
 	notify "Preparing swap file at ${SWAPFILE}"
@@ -299,21 +303,29 @@ create_swapfile () {
 
 }
 
+## Configure hibernation to swapfile by adding proper options to grub config.
+## We need to use `btrfs_map_physical` binary to get a correct FS offset of swapfile.
 enable_hibernate () {
 
 	notify "Configuring hibernation to swapfile"
-	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume=UUID=$(findmnt -no UUID -T ${SWAPFILE})\"/" /mnt/etc/default/grub
-	SWAPFILE_PHYSICAL=$(Arch_install/btrfs_map_physical ${SWAPFILE} | awk 'NR == 2 {print $9}')
+
+	SWAPFILE_PHYSICAL=$(/root/Arch_install/btrfs_map_physical ${SWAPFILE} | awk 'NR == 2 {print $9}')
 	PAGESIZE=$(${CHROOT_PREFIX} getconf PAGESIZE)
+
+	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume=UUID=$(findmnt -no UUID -T ${SWAPFILE})\"/" /mnt/etc/default/grub
 	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume_offset=$(expr $SWAPFILE_PHYSICAL / $PAGESIZE)\"/" /mnt/etc/default/grub
 }
 
+## Configure SecureBoot. We are using shim_signed from AUR, it must be prepared on installation media.
 secure_boot () {
 
-	## --- Install  basic environment ---
+	## ----------------------------------------------
+	## Install  basic environment
+	## ----------------------------------------------
+
 	## Do we have shim installed? 
 	${CHROOT_PREFIX} pacman -Qs shim-signed > /dev/null
-	## if not... 
+	## if not, install it. We clone the AUR git repo so that it is easier to update/maintain AUR package in the installed system. 
 	if [[ $? -gt 0 ]]; then
 		notify "Installing shim-signed from pre-built package.\nThis will also clone AUR git repo to ${BUILDDIR}."
 		mkdir -p ${BUILDDIR}
@@ -325,7 +337,8 @@ secure_boot () {
 		cd /root
 	fi
 
-	## install GRUB, we need to have it first
+	## install GRUB, we have to use sbat (SecureBootAdvancedTargeting) and TPM module
+	## via https://wiki.archlinux.org/title/Unified_Extensible_Firmware_Interface/Secure_Boot#Shim_with_key_and_GRUB
 	cat > /mnt/etc/grub.d/sbat.csv << EOF
 sbat,1,SBAT Version,sbat,1,https://github.com/rhboot/shim/blob/main/SBAT.md
 grub,1,Free Software Foundation,grub,2.06,https://www.gnu.org/software/grub
@@ -333,16 +346,22 @@ EOF
 	notify "Installing GRUB"
 	${CHROOT_PREFIX} grub-install --target=x86_64-efi --efi-directory=/boot --modules=tpm --sbat /etc/grub.d/sbat.csv --bootloader-id=GRUB
 
-	## --- Prepare shim loader ---
-	## Is this needed? grub now doesnt create BOOTx64.efi
-	if ! [[ -e /mnt/boot/EFI/GRUB/grubx64.efi ]]; then
-		cp /mnt/boot/EFI/GRUB/BOOTx64.efi  /mnt/boot/EFI/GRUB/grubx64.efi 
-	fi
+	## ----------------------------------------------
+	## Prepare shim loader
+	## ----------------------------------------------
+
+	## DEBUG Is this needed? grub now doesnt create BOOTx64.efi
+	#if ! [[ -e /mnt/boot/EFI/GRUB/grubx64.efi ]]; then
+		#cp /mnt/boot/EFI/GRUB/BOOTx64.efi  /mnt/boot/EFI/GRUB/grubx64.efi 
+	#fi
 
 	cp /mnt/usr/share/shim-signed/shimx64.efi /mnt/boot/EFI/GRUB/BOOTx64.efi  
 	cp /mnt/usr/share/shim-signed/mmx64.efi /mnt/boot/EFI/GRUB/ 
 
-	## --- EFImanager set ---
+	## ----------------------------------------------
+	## EFImanager set
+	## ----------------------------------------------
+
 	## Check if we have shim EFI entry, if yes, rewrite
 	notify "Preparing EFI boot entry"
 	SHIM_ID=($(efibootmgr | grep Shim | sed 's/[^0-9]*//g'))
@@ -350,12 +369,22 @@ EOF
 		efibootmgr -b $i -B
 	done
 
-	## install boot entry 
+	## We can also remove 'GRUB' EFI entry, installing grub creates it automatically and we won't be using it.
+	GRUB_ID=($(efibootmgr | grep GRUB | sed 's/[^0-9]*//g'))
+	for i in "${GRUB_ID[@]}"; do
+		efibootmgr -b $i -B
+	done
+
+	## Add Shim boot entry 
 	efibootmgr --verbose --disk ${INSTALL_PARTITION} --part 1 --create --label "Shim" --loader /EFI/GRUB/BOOTx64.efi  
 
-	## create MoK and certs
+	## ----------------------------------------------
+	## create MachineOwnerKey and certs
+	## ----------------------------------------------
 
-	if ! [[ -e ${MOKDIR}/MOK.crt ]]; then
+	## We should make MOK only when it is not provided.
+	## We need all of the required files tho, if any of them is missing, recreate them all
+	if ! [[ -e ${MOKDIR}/MOK.crt ]] || ! [[ -e ${MOKDIR}/MOK.key ]] || ! [[ -e ${MOKDIR}/MOK.cer ]]; then
 		notify "Preparing Machine Owners Key for SecureBoot"
 		mkdir -p ${MOKDIR}
 		openssl req -newkey rsa:4096 -nodes -keyout ${MOKDIR}/MOK.key -new -x509 -sha256 -days 3650 -subj "/CN=${HOSTNAME} Machine Owner Key" -out ${MOKDIR}/MOK.crt
@@ -371,14 +400,18 @@ EOF
 }
 
 ## ----------------------------------------------
-
 ## Main script flow
+## ----------------------------------------------
 
 ## make sure we are in the correct directory
+## DEBUG - Needed? we are using absolute paths everywhere
 cd /root
 
-## Keymap for instalation ISO - mainly for passphrases
-loadkeys ${KEYMAP}
+## Keymap for instalation, mainly for passphrases
+if ! [[ -z ${KEYMAP} ]]; then
+    warn "Setting keymap to ${KEYMAP}, be carefull about your passphrases and password(s)!"
+    loadkeys ${KEYMAP}
+fi
 
 ## Lets set all the vars if we need to
 if [[ -z ${INSTALL_PARTITION}  ||  -z ${USERNAME} || -z ${HOSTNAME} ]]; then set_variables; fi
@@ -401,7 +434,7 @@ fi
 
 ## Install base system + defined utils
 if ! [[ $SKIP_PACSTRAP = true ]]; then
-    notify_wait "installing base system with \n 'pacstrap /mnt base linux linux-firmware ${INSTALLSW}'"
+    notify_wait "Installing base system with \n 'pacstrap /mnt base linux linux-firmware ${INSTALLSW}'"
     pacstrap /mnt base linux linux-firmware ${INSTALLSW}
     notify "Base system succesfully installed"
 fi
@@ -416,10 +449,10 @@ if ! [[ ${FIDO2_DISABLE} = true ]]; then
     notify "Enrolling FIDO2 key for enrcrypted drive"
     ${CHROOT_PREFIX} systemd-cryptenroll --fido2-device=auto ${CRYPT_PARTITION}
     ${CHROOT_PREFIX} systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}
-    warn_wait "This is your recovery key.\nMake sure you dont lose this!!!"
+    warn_wait "This is your recovery key.\nMake sure you dont lose it!!!"
 fi
 
-## set locales and keymap
+## Set locales and keymap
 ## TODO: for locale in locases add... 
 sed -i 's/^#cs_CZ.UTF-8 UTF-8/cs_CZ.UTF-8 UTF-8/ ; s/^#en_US.UTF-8 UTF-8/en_US.UTF-8 UTF-8/' /mnt/etc/locale.gen
 notify "Generating Locales"
@@ -427,26 +460,26 @@ ${CHROOT_PREFIX} locale-gen
 echo "LANG=en_US.UTF-8" > /mnt/etc/locale.conf
 echo "KEYMAP="${KEYMAP} > /mnt/etc/vconsole.conf
 
-## update /etc/mkinitcpio.conf - add hooks
+## Update /etc/mkinitcpio.conf - add hooks
 sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
-## create /etc/crypttab.initramfs , add cryptrrot by UUID
+## Create /etc/crypttab.initramfs, add cryptrrot by UUID
 cp /mnt/etc/crypttab /mnt/etc/crypttab.initramfs
-echo "cryptroot	/dev/nvme0n1p2	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
+echo "cryptroot	${CRYPT_PARTITION}	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
 
 ## make initramfs
 notify "Generating initramfs"
 ${CHROOT_PREFIX} mkinitcpio -P
 
-## disable splash (DEBUG??)
+## disable splash (DEBUG?? Replace with some kind of prompt?)
 sed -i '/GRUB_CMDLINE_LINUX_DEFAULT/s/ quiet//' /mnt/etc/default/grub
 
 if [[ ${SKIP_SWAPFILE} = true || ${SKIP_HIBERNATE} = true ]]; then enable_hibernate; fi
 
 ## TODO - Ask to skip if superuser already exists
 ## Create user - ask for username (if not provided in variable) and password
-## Need to create user before SecureBOokt because of ~/ used 
-notify "Creating non-root user."
+## Need to create user before SecureBoot because of ~/ used 
+notify "Creating non-root administrator user ${USERNAME}."
 if [[ -z $(grep ${USERNAME} /mnt/etc/passwd) ]]; then
 	${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
 	${CHROOT_PREFIX} passwd ${USERNAME}
@@ -460,6 +493,7 @@ if [[ ${SKIP_SECUREBOOT} = true ]]; then
 else
    secure_boot
 fi
+
 notify "Configuring GRUB"
 ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
 
@@ -468,6 +502,7 @@ ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
 genfstab -U /mnt >> /mnt/etc/fstab
 
 ## Settimezone and hwclock
+## TODO - Timezone in variable? 
 ${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
 ${CHROOT_PREFIX} hwclock --systohc
 
@@ -481,7 +516,7 @@ chmod 0440 /mnt/etc/sudoers.d/wheel
 ## Disable predictable interface names
 [[ -e /mnt/etc/udev/rules.d/80-net-setup-link.rules ]] || ln -s /dev/null /mnt/etc/udev/rules.d/80-net-setup-link.rules
 
-## Enable networkmanager
+## Enable networkmanager service
 ## TODO - check if networkmanager exists? 
 ${CHROOT_PREFIX} systemctl enable NetworkManager.service
 
@@ -495,10 +530,9 @@ USER_ID=$(grep ${USERNAME} /mnt/etc/passwd | cut -d ':' -f 4 )
 chown -R ${USER_ID}:${USER_ID} /mnt/home/${USERNAME}/
 
 ## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
-## not yet, debuugign and token doesnt work in arch live iso... 
-## DEBUG
+## DEBUG - not yet, debuging and token doesnt work in arch live iso... 
 # if ! [[ ${FIDO2_DISABLE} = true ]]; then cryptsetup luksRemoveKey ${CRYPT_PARTITION}; fi
 
 ## We should have working system, lets try to go for it. = D
-notify_wait "Instalation complete, ready to reboot"
+notify_wait "Installation complete, ready to reboot"
 reboot 
