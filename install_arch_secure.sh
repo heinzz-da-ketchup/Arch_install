@@ -67,7 +67,6 @@ create_filesystem () {
     notify "Preparing encrypted volume"
     if ! [[ ${FIDO2_DISABLE} = true ]]; then warn_wait "No need to set strong passphrase, it will later be replaced by FIDO2 token and recovery key"; fi
     cryptsetup luksFormat ${CRYPT_PARTITION}
-    mount -o subvol=@ /dev/mapper/cryptroot /mnt
     notify "Encrypted volume created, please unlock it"
     cryptsetup open ${CRYPT_PARTITION} cryptroot
 
@@ -154,7 +153,7 @@ secure_boot () {
 		notify "Installing shim-signed from pre-built package.\nThis will also clone AUR git repo to ${BUILDDIR}."
 		mkdir -p ${BUILDDIR}
 		cd ${BUILDDIR}
-		rm -r shim-signed
+		rm -r shim-signed 2>/dev/null
 		git clone https://aur.archlinux.org/shim-signed.git
 		cp /root/Arch_install/shim-signed-*pkg.tar.zst ${BUILDDIR}/shim-signed/
 		${CHROOT_PREFIX} bash -c "pacman -U ${BUILDDIR_CHROOT}/shim-signed/shim-signed*.pkg.tar.zst"
