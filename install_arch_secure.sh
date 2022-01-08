@@ -134,7 +134,7 @@ enable_hibernate () {
 
 	notify "Configuring hibernation to swapfile"
 
-	SWAPFILE_PHYSICAL=$(/root/Arch_install/btrfs_map_physical ${SWAPFILE} | awk 'NR == 2 {print $9}')
+	SWAPFILE_PHYSICAL=$(${SCRIPT_DIR}/btrfs_map_physical ${SWAPFILE} | awk 'NR == 2 {print $9}')
 	PAGESIZE=$(${CHROOT_PREFIX} getconf PAGESIZE)
 
 	sed -i "/GRUB_CMDLINE_LINUX_DEFAULT/s/\"$/ resume=UUID=$(findmnt -no UUID -T ${SWAPFILE})\"/" /mnt/etc/default/grub
@@ -157,7 +157,7 @@ secure_boot () {
 		cd ${BUILDDIR}
 		rm -r shim-signed 2>/dev/null
 		git clone https://aur.archlinux.org/shim-signed.git
-		cp /root/Arch_install/shim-signed-*pkg.tar.zst ${BUILDDIR}/shim-signed/
+		cp ${SCRIPT_DIR}/shim-signed-*pkg.tar.zst ${BUILDDIR}/shim-signed/
 		${CHROOT_PREFIX} bash -c "pacman -U ${BUILDDIR_CHROOT}/shim-signed/shim-signed*.pkg.tar.zst"
 		cd /root
 	fi
@@ -354,7 +354,7 @@ ${CHROOT_PREFIX} systemctl enable NetworkManager.service
 echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
 ## DEBUG - copy over the install scripts to be able to work on them in the OS
-cp -r /root/Arch_install /mnt/home/${USERNAME}/
+cp -r ${SCRIPT_DIR} /mnt/home/${USERNAME}/
 cp -r /root/.ssh /mnt/home/${USERNAME}/
 USER_ID=$(grep ${USERNAME} /mnt/etc/passwd | cut -d ':' -f 4 )
 chown -R ${USER_ID}:${USER_ID} /mnt/home/${USERNAME}/
