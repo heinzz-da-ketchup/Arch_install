@@ -71,11 +71,11 @@ get_valid_input (){
 	printf ${GREEN} >/dev/tty
 	printf "\n##############################\n" >/dev/tty
 
-	while ! [[ $(grep -qw ${Input} <<< ${Prompt}) ]]; do
+	while ! [[ $(grep -w ${Input} <<< ${Prompt}) ]]; do
 		printf ${GREEN}"Please set ${2}\n"${NC} >/dev/tty
 		read Input
 
-		if ! [[ $(grep -qw ${Input} <<< ${Prompt}) ]]; then
+		if ! [[ $(grep -w ${Input} <<< ${Prompt}) ]]; then
 		    printf ${RED}"Wrong ${2}\n\n"${NC} >/dev/tty
 		fi
 	done
