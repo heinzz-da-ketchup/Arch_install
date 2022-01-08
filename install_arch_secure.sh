@@ -222,15 +222,6 @@ EOF
 	notify "Signing bootloader and startup image"
 	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/vmlinuz-linux /boot/vmlinuz-linux
 	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/EFI/GRUB/grubx64.efi /boot/EFI/GRUB/grubx64.efi
-	
-	## Sign microcode image if exists
-	shopt -s nullglob && UCODE_IMAGE=/mnt/boot/*ucode.img
-	if [[ -n ${UCODE_IMAGE} ]]; then
-	    for Image in ${UCODE_IMAGE}; do
-		Image_chroot=$(sed 's|/mnt||' <<< ${Image})
-		${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output ${Image_chroot} ${Image_chroot}
-	    done
-	fi
 }
 
 ## ----------------------------------------------
