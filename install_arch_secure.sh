@@ -291,7 +291,7 @@ fi
 if ! [[ ${FIDO2_DISABLE} = true ]]; then 
     notify "Enrolling FIDO2 key for enrcrypted drive"
     ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=fido2 --fido2-device=auto ${CRYPT_PARTITION}
-    ${CHROOT_PREFIX} systemd-cryptenroll --recovery-key ${CRYPT_PARTITION}
+    ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=recover --recovery-key ${CRYPT_PARTITION}
     warn_wait "This is your recovery key.\nMake sure you dont lose it!!!"
 fi
 
@@ -322,7 +322,7 @@ if [[ ${SKIP_SWAPFILE} = true || ${SKIP_HIBERNATE} = true ]]; then enable_hibern
 ## TODO - Ask to skip if superuser already exists
 ## Create user - ask for username (if not provided in variable) and password
 ## Need to create user before SecureBoot because of ~/ used 
-if ! id ${USERNAME} &>/dev/null; then
+if ! ${CHROOT_PREFIX} id ${USERNAME} &>/dev/null; then
 	notify "Creating non-root administrator user ${USERNAME}."
 	${CHROOT_PREFIX} useradd -m -G wheel -s /bin/bash ${USERNAME}
 	until ${CHROOT_PREFIX} passwd ${USERNAME}; do
