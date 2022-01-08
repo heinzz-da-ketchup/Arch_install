@@ -194,12 +194,6 @@ EOF
 		efibootmgr -b $i -B
 	done
 
-	## We can also remove 'GRUB' EFI entry, installing grub creates it automatically and we won't be using it.
-	GRUB_ID=($(efibootmgr | grep GRUB | sed 's/[^0-9]*//g'))
-	for i in "${GRUB_ID[@]}"; do
-		efibootmgr -b $i -B
-	done
-
 	## Add Shim boot entry 
 	efibootmgr --verbose --disk ${INSTALL_PARTITION} --part 1 --create --label "Shim" --loader /EFI/GRUB/BOOTx64.efi  
 
@@ -329,6 +323,12 @@ fi
 
 notify "Configuring GRUB"
 ${CHROOT_PREFIX} grub-mkconfig -o /boot/grub/grub.cfg
+
+## We can also remove 'GRUB' EFI entry, installing grub creates it automatically and we won't be using it.
+GRUB_ID=($(efibootmgr | grep GRUB | sed 's/[^0-9]*//g'))
+for i in "${GRUB_ID[@]}"; do
+	efibootmgr -b $i -B
+done
 
 ## we can create fstab now
 ## TODO - run olny once
