@@ -117,8 +117,6 @@ set_variables () {
 
     ## show lsblk, select where to partition
     [[ -z $INSTALL_PARTITION ]] && INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
-    CRYPT_PARTITION=${INSTALL_PARTITION}p2
-    BOOT_PARTITION=${INSTALL_PARTITION}p1
 
     if [[ -z ${USERNAME} ]]; then
 	    USERNAME=$(get_confirmed_input "username") 

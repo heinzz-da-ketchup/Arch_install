@@ -35,6 +35,9 @@ SWAPFILE=""			## ---------------------- // ------------------------
 ## Prepare rest of variables, set some sane defaults if needed
 ## ----------------------------------------------
 
+## Ask for user input if we need to
+if [[ -z ${INSTALL_PARTITION}  ||  -z ${USERNAME} || -z ${HOSTNAME} ]]; then set_variables; fi
+
 if [[ -z ${BUILDDIR} ]]; then
 	BUILDDIR="/mnt/home/${USERNAME}/builds"
 	BUILDDIR_CHROOT="/home/${USERNAME}/builds"
@@ -53,6 +56,7 @@ if [[ -z ${SWAPFILE} ]]; then
 	SWAPFILE="/mnt/swap/swapfile"
 fi
 
+CRYPT_PARTITION=${INSTALL_PARTITION}p2
+BOOT_PARTITION=${INSTALL_PARTITION}p1
 SWAPDIR=$(grep -o '.*/'<<< ${SWAPFILE})
 INSTALLSW="${USERSW} ${BASICUTILS}"
-

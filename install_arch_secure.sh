@@ -247,9 +247,6 @@ if ! [[ -z ${KEYMAP} ]]; then
     loadkeys ${KEYMAP}
 fi
 
-## Lets set all the vars if we need to
-if [[ -z ${INSTALL_PARTITION}  ||  -z ${USERNAME} || -z ${HOSTNAME} ]]; then set_variables; fi
-
 net_connect
 
 ## Set time via ntp
@@ -291,7 +288,7 @@ fi
 if ! [[ ${FIDO2_DISABLE} = true ]]; then 
     notify "Enrolling FIDO2 key for enrcrypted drive"
     ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=fido2 --fido2-device=auto ${CRYPT_PARTITION}
-    ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=recover --recovery-key ${CRYPT_PARTITION}
+    ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=recovery --recovery-key ${CRYPT_PARTITION}
     warn_wait "This is your recovery key.\nMake sure you dont lose it!!!"
 fi
 
