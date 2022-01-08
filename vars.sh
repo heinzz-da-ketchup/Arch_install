@@ -21,10 +21,10 @@ CHROOT_PREFIX="arch-chroot /mnt"
 KEYMAP="cz-qwertz" 				
 
 USERSW="networkmanager vim git openssh"
-BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo sbsigntools"
+BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo sbsigntools polkit"
 
 ## Script will ask or use defaults if empty
-INSTALL_PARTITION=""		## As a full path, eg. "/dev/sdb"
+INSTALL_PARTITION="/dev/sda"		## As a full path, eg. "/dev/sdb"
 USERNAME=""
 HOSTNAME=""
 BUILDDIR=""			## Path in install environment, eg "/mnt/path/to/file"
