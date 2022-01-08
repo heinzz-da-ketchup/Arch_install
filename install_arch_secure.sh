@@ -222,6 +222,14 @@ EOF
 	notify "Signing bootloader and startup image"
 	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/vmlinuz-linux /boot/vmlinuz-linux
 	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/EFI/GRUB/grubx64.efi /boot/EFI/GRUB/grubx64.efi
+	
+	## Sign microcode image if exists
+	shopt -s nullglob && UCODE_IMAGE=/mnt/boot/*ucode.img
+	if [[ -n ${UCODE_IMAGE} ]]; then
+	    for Image in ${UCODE_IMAGE}; do
+		${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output ${Image} ${Image}
+	    done
+	fi
 }
 
 ## ----------------------------------------------
@@ -256,6 +264,14 @@ fi
 [[ $SKIP_CREATE_FS = true ]] || create_filesystem
 [[ $SKIP_MOUNT_FS = true ]] || mount_filesystem
 [[ $SKIP_SWAPFILE = true ]] || create_swapfile
+
+if ! [[ $SKIP_UCODE = true ]]; then
+    if grep -q Intel /proc/cpuinfo; then
+	INSTALLSW="${INSTALLSW} intel-ucode"
+    elif grep -q AMD /proc/cpuinfo; then 
+	INSTALLSW="${INSTALLSW} amd-ucode"
+    fi
+fi
 
 ## Install base system + defined utils
 if ! [[ $SKIP_PACSTRAP = true ]]; then

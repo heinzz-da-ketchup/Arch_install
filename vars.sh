@@ -12,6 +12,7 @@ SKIP_MOUNT_FS=false
 SKIP_PACSTRAP=false
 SKIP_SWAPFILE=false
 SKIP_HIBERNATE=false
+SKIP_UCODE=false
 SKIP_SECUREBOOT=false
 ONLY_MOUNT=false				## DEBUG - Stop script after mounting filesystems
 
