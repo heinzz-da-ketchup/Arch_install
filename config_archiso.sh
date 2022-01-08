@@ -1,13 +1,24 @@
-USERNAME="jhrubes"
-SCRIPT_DIR="/home/${USERNAME}/Arch_install"
-BUILDDIR="/home/${USERNAME}/builds"
+#!/bin/bash
+
+SCRIPT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
+
+source ${SCRIPT_DIR}/vars.sh
+source ${SCRIPT_DIR}/common_functions.sh
+
+if [[ -z ${USERNAME} ]]; then
+	USERNAME=$(get_confirmed_input "username") 
+fi
 
 ## Prepare packages and binary files to use
+notify "Installing 'base-devel' and 'archiso'"
 sudo pacman -Sy base-devel archiso
+## TODO - Install build-devel only if needed
 
 ## Get and build btrfs_map_physical
 if ! [[ -e ${SCRIPT_DIR}/btrfs_map_physical ]]; then
 	
+	notify "Getting and compiling 'btrfs_map_physical' tool"
+
 	mkdir -p ${BUILDDIR}
 	mkdir -p ${BUILDDIR}/btrfs_map_physical
 	cd ${BUILDDIR}/btrfs_map_physical
@@ -19,23 +30,29 @@ if ! [[ -e ${SCRIPT_DIR}/btrfs_map_physical ]]; then
 	cd ${SCRIPT_DIR}
 fi
 
-## get and makepkg for signed shim
+## Get and makepkg for signed shim
 if ! [[ $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
+	
+	notify "Getting 'shim-signed' from AUR and buildng package"
+
 	mkdir -p ${BUILDDIR}
 	cd ${BUILDDIR}
-	rm -r shim-signed
+	rm -r shim-signed 2>/dev/null
 	git clone https://aur.archlinux.org/shim-signed.git
 	cd ${BUILDDIR}/shim-signed
 
 	## Due dilligence
-	echo "check your AUR build files!" 
+	warn_wait "Check your AUR build files!" 
 	less PKGBUILD
+	printf "\n"
 	less shim-signed.install
-	echo "is it OK? Y to continue"
+
+	printf ${YELLOW}
+	printf "Is it OK? Y/y to continue"
+	printf ${NC}
 	read Confirm
 	if ! [[ ${Confirm} =~ y|Y ]]; then
-		echo "Aborting install"
-		exit 1
+		error "Aborting install"
 	fi
 
 	makepkg -rc
@@ -44,13 +61,14 @@ if ! [[ $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
 	cd ${SCRIPT_DIR}
 fi
 
-sudo rm -r /mnt/archiso_custom
+sudo rm -r /mnt/archiso_custom 2>/dev/null
 
 ## copy profile
 sudo cp -r /usr/share/archiso/configs/releng /mnt/archiso_custom
 sudo chown -R ${USERNAME}:${USERNAME} /mnt/archiso_custom
 
 ## copy over .ssh and Arch_install dirs
+## DEBUG - SSH key is only for development! 
 mkdir /mnt/archiso_custom/airootfs/root/.ssh
 cp -r /home/${USERNAME}/.ssh/id_ed25519 /mnt/archiso_custom/airootfs/root/.ssh/
 cp -r ${SCRIPT_DIR} /mnt/archiso_custom/airootfs/root/
@@ -68,6 +86,7 @@ echo ')' >> /mnt/archiso_custom/profiledef.sh
 echo "KEYMAP=cz-qwertz" >> /mnt/archiso_custom/airootfs/etc/vconsole.conf
 
 ## set wifi
+## DEBUG - Publishing my PSK online? probably not the best idea... (@_@)
 mkdir -p /mnt/archiso_custom/airootfs/var/lib/iwd
 echo "[Security]" >> /mnt/archiso_custom/airootfs/var/lib/iwd/CabinLove.psk
 echo "Passphrase=NebudouMitStenata" >> /mnt/archiso_custom/airootfs/var/lib/iwd/CabinLove.psk
