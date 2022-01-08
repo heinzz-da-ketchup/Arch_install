@@ -17,8 +17,10 @@
 ## Auhtor: Jan Hrubes, 2021-2022
 ## ----------------------------------------------
 
-source vars.sh
-source common_functions.sh
+SCRIPT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
+
+source ${SCRIPT_DIR}/vars.sh
+source ${SCRIPT_DIR}/common_functions.sh
 
 ## End on error or SIGINT- DEBUG
 trap exit 1 ERR
