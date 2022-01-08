@@ -227,7 +227,8 @@ EOF
 	shopt -s nullglob && UCODE_IMAGE=/mnt/boot/*ucode.img
 	if [[ -n ${UCODE_IMAGE} ]]; then
 	    for Image in ${UCODE_IMAGE}; do
-		${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output ${Image} ${Image}
+		Image_chroot=$(sed 's|/mnt||' <<< ${Image})
+		${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output ${Image_chroot} ${Image_chroot}
 	    done
 	fi
 }
