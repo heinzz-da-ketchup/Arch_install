@@ -14,6 +14,7 @@ SKIP_SWAPFILE=false
 SKIP_HIBERNATE=false
 SKIP_UCODE=false
 SKIP_SECUREBOOT=false
+SKIP_FIREWALL=false
 ONLY_MOUNT=false				## DEBUG - Stop script after mounting filesystems
 
 ## Must be set here

@@ -218,6 +218,12 @@ EOF
 	${CHROOT_PREFIX} sbsign --key ${MOKDIR_CHROOT}/MOK.key --cert ${MOKDIR_CHROOT}/MOK.crt --output /boot/EFI/GRUB/grubx64.efi /boot/EFI/GRUB/grubx64.efi
 }
 
+set_firewall () {
+
+    ${CHROOT_PREFIX} iptables-restore < /etc/iptables/empty.rules
+    ${CHROOT_PREFIX} iptables-restore < /etc/iptables/simple_firewall.rules
+}
+
 ## ----------------------------------------------
 ## Main script flow
 ## ----------------------------------------------
@@ -336,8 +342,12 @@ genfstab -U /mnt >> /mnt/etc/fstab
 
 ## Settimezone and hwclock
 ## TODO - Timezone in variable? 
-${CHROOT_PREFIX} ln -sf /usr/shaze/zoneinfo/Europe/Prague /etc/localtime
+${CHROOT_PREFIX} ln -sf /usr/share/zoneinfo/Europe/Prague /etc/localtime
 ${CHROOT_PREFIX} hwclock --systohc
+## Enable ntp via systemd-timesyncd.service
+sed -i 's/^#Fallback/Fallback/' /mnt/etc/systemd/timesyncd.conf
+${CHROOT_PREFIX} systemctl enable systemd-timesyncd.service
+
 
 ## set hosntame
 echo ${HOSTNAME} > /mnt/etc/hostname
@@ -357,6 +367,15 @@ ${CHROOT_PREFIX} systemctl enable NetworkManager.service
 
 ## Set lower swappiness
 echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
+
+## Enforce 4sec delay between failed login attempst
+echo "auth optional pam_faildelay.so delay=4000000" >> /mnt/etc/pam.d/system-login
+
+## Set basic firewall
+[[ $SKIP_FIREWALL = true ]] || set_firewall
+
+## Set Pacman mirrorlist
+reflector --country Czechia,Germany,Slovakia,Austria --age 12 --number 5 --protocol https --sort rate --save /mnt/etc/pacman.d/mirrolist
 
 ## DEBUG - copy over the install scripts to be able to work on them in the OS
 cp -r ${SCRIPT_DIR} /mnt/home/${USERNAME}/
