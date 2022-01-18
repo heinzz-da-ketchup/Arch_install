@@ -382,7 +382,7 @@ fi
 if ! [[ ${FIDO2_DISABLE} == true ]]; then
     notify_wait "Set your FIDO2 token for login and sudo"
     mkdir -p /mnt/home/${USERNAME}/.config/Yubico
-    ${CHROOT_PREFIX} pamu2fcfg -o pam://${HOSTNAME} -i pam://${HOSTNAME} > /home/${USERNAME}/.config/Yubico/u2f_keys
+    ${CHROOT_PREFIX} pamu2fcfg -o pam://${HOSTNAME} -i pam://${HOSTNAME} > /mnt/home/${USERNAME}/.config/Yubico/u2f_keys
 
     ## Set pam configuration
     sed -i "1a auth sufficient pam_u2f.so cue origin=pam://${HOSTNAME} appid=pam://${HOSTNAME}" /mnt/etc/pam.d/login
