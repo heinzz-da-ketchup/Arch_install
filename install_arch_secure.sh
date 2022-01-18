@@ -385,8 +385,8 @@ if ! [[ ${FIDO2_DISABLE} == true ]]; then
     ${CHROOT_PREFIX} pamu2fcfg -o pam://${HOSTNAME} -i pam://${HOSTNAME} > /home/${USERNAME}/.config/Yubico/u2f_keys
 
     ## Set pam configuration
-    sed -i '/auth/i auth sufficient pam_u2f.so cue origin=pam://${HOSTNAME} appid=pam://${HOSTNAME}' /mnt/etc/pam.d/login
-    sed -i '/auth/i auth sufficient pam_u2f.so cue origin=pam://${HOSTNAME} appid=pam://${HOSTNAME}' /mnt/etc/pam.d/sudo
+    sed -i '2a auth sufficient pam_u2f.so cue origin=pam://${HOSTNAME} appid=pam://${HOSTNAME}' /mnt/etc/pam.d/login
+    sed -i '2a auth sufficient pam_u2f.so cue origin=pam://${HOSTNAME} appid=pam://${HOSTNAME}' /mnt/etc/pam.d/sudo
 fi
 
 ## Disable predictable interface names
