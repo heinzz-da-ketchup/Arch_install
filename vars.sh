@@ -21,7 +21,7 @@ ONLY_MOUNT=false				## DEBUG - Stop script after mounting filesystems
 CHROOT_PREFIX="arch-chroot /mnt"
 KEYMAP="cz-qwertz" 				
 
-USERSW="networkmanager vim git openssh"
+USERSW="networkmanager vim git openssh usbguard cifs-utils"
 BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo sbsigntools polkit"
 
 ## Script will ask or use defaults if empty
@@ -31,6 +31,11 @@ HOSTNAME=""
 BUILDDIR=""			## Path in install environment, eg "/mnt/path/to/file"
 MOKDIR=""			## ---------------------- // ------------------------
 SWAPFILE=""			## ---------------------- // ------------------------
+
+## Optional config
+SAMBA_SHARES=""			## Space separated list of samba shares to add to fstab
+SAMBA_USER=""			## If $SAMBA_SHARES are not empty, script will ask for username and PW
+SAMBA_PW=""
 
 ## ----------------------------------------------
 ## Prepare rest of variables, set some sane defaults if needed
