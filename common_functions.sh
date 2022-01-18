@@ -110,20 +110,3 @@ get_confirmed_input () {
 
 	echo ${Input}
 }
-
-set_variables () {
-
-    notify_wait "We need to set some basic variables"
-
-    ## show lsblk, select where to partition
-    [[ -z $INSTALL_PARTITION ]] && INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")
-
-    if [[ -z ${USERNAME} ]]; then
-	    USERNAME=$(get_confirmed_input "username") 
-    fi
-
-    if [[ -z ${HOSTNAME} ]]; then
-	    HOSTNAME=$(get_confirmed_input "hostname")
-    fi
-}
-

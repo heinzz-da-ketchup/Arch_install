@@ -19,8 +19,8 @@
 
 SCRIPT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 
-source ${SCRIPT_DIR}/vars.sh
 source ${SCRIPT_DIR}/common_functions.sh
+source ${SCRIPT_DIR}/vars.sh
 
 ## End on error or SIGINT- DEBUG
 trap exit 1 ERR

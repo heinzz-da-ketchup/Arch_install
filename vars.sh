@@ -42,8 +42,24 @@ SAMBA_PW=""
 ## ----------------------------------------------
 
 ## Ask for user input if we need to
-if [[ -z ${INSTALL_PARTITION}  ||  -z ${USERNAME} || -z ${HOSTNAME} ]]; then set_variables; fi
+if [[ -z ${INSTALL_PARTITION} ]]; then
+    INSTALL_PARTITION="/dev/"$(get_valid_input "lsblk -d" "block device to install")   
+fi
 
+if [[ -z ${USERNAME} ]]; then 
+    USERNAME=$(get_confirmed_input "username") 
+fi
+
+if [[ -z ${HOSTNAME} ]]; then 
+    HOSTNAME=$(get_confirmed_input "hostname")
+fi
+
+if [[ -n ${SAMBA_SHARES} ]]; then
+    [[ -z ${SAMBA_USER} ]] && SAMBA_USER=$(get_confirmed_input "Samba user")
+    [[ -z ${SAMBA_PW} ]] && SAMBA_PW=$(get_confirmed_input "Password for samba user ${SAMBA_USER}")
+fi
+
+## For others, we have sane defaults
 if [[ -z ${BUILDDIR} ]]; then
 	BUILDDIR="/mnt/home/${USERNAME}/builds"
 	BUILDDIR_CHROOT="/home/${USERNAME}/builds"
