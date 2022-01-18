@@ -378,10 +378,6 @@ if ! [[ -e /mnt/sudoers/wheel ]]; then
     chmod 0440 /mnt/etc/sudoers.d/wheel
 fi
 
-## allowlist connected devices in UsbGuard - Mainly for Fido2 key
-## TODO - Let user select which device is Fido2 key, do not allow everything
-${CHROOT_PREFIX} usbguard generate-policy > /etc/usbguard/rules.conf
-
 ## Setup passwordless sudo and login with Fido2
 if ! [[ ${FIDO2_DISABLE} == true ]]; then
     mkdir -p /mnt/home/${USERNAME}/.config/Yubico
