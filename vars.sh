@@ -22,7 +22,7 @@ CHROOT_PREFIX="arch-chroot /mnt"
 KEYMAP="cz-qwertz" 				
 
 USERSW="networkmanager vim git openssh usbguard cifs-utils"
-BASICUTILS="btrfs-progs man-db man-pages texinfo libfido2 grub efibootmgr sudo sbsigntools polkit"
+BASICUTILS="btrfs-progs man-db man-pages texinfo grub efibootmgr sudo sbsigntools polkit"
 
 ## Script will ask or use defaults if empty
 INSTALL_PARTITION="/dev/sda"		## As a full path, eg. "/dev/sdb"
@@ -76,6 +76,11 @@ fi
 
 if [[ -z ${SWAPFILE} ]]; then
 	SWAPFILE="/mnt/swap/swapfile"
+fi
+
+## Add needed packages if we are using FIDO2 token
+if ! [[ ${FIDO2_DISABLE} == ture ]]; then
+    BASICUTILS="${BASICUTILS} libfido2 pam-u2f"
 fi
 
 CRYPT_PARTITION=${INSTALL_PARTITION}p2

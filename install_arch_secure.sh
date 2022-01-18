@@ -375,12 +375,27 @@ if ! [[ -e /mnt/sudoers/wheel ]]; then
     chmod 0440 /mnt/etc/sudoers.d/wheel
 fi
 
+## allowlist connected devices in UsbGuard - Mainly for Fido2 key
+## TODO - Let user select which device is Fido2 key, do not allow everything
+${CHROOT_PREFIX} usbguard generate-policy > /etc/usbguard/rules.conf
+
+## Setup passwordless sudo and login with Fido2
+if ! [[ ${FIDO2_DISABLE} == true ]]; then
+    mkdir -p /mnt/home/${USERNAME}/.config/Yubico
+    ${CHROOT_PREFIX} pamu2fcfg -o pam://${HOSTNAME} -i pam://${HOSTNAME} > /home/${USERNAME}/.config/Yubico/u2f_keys
+
+    ## Set pam configuration
+    sed -i '/auth/i auth sufficient pam_u2f.so cue origin=pam://${HOSTNAME} appid=pam://${HOSTNAME}' /mnt/etc/pam.d/login
+    sed -i '/auth/i auth sufficient pam_u2f.so cue origin=pam://${HOSTNAME} appid=pam://${HOSTNAME}' /mnt/etc/pam.d/sudo
+fi
+
 ## Disable predictable interface names
 [[ -e /mnt/etc/udev/rules.d/80-net-setup-link.rules ]] || ln -s /dev/null /mnt/etc/udev/rules.d/80-net-setup-link.rules
 
 ## Enable networkmanager service
 ## TODO - check if networkmanager exists? 
 ${CHROOT_PREFIX} systemctl enable NetworkManager.service
+
 ## Enable periodic fstrim, screw you if you dont have ssd in 2022 >= )
 ${CHROOT_PREFIX} systemctl enable fstrim.timer
 
