@@ -364,6 +364,8 @@ fi
 ## Enable networkmanager service
 ## TODO - check if networkmanager exists? 
 ${CHROOT_PREFIX} systemctl enable NetworkManager.service
+## Enable periodic fstrim, screw you if you dont have ssd in 2022 >= )
+${CHROOT_PREFIX} systemctl enable fstrim.timer
 
 ## Set lower swappiness
 echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
