@@ -13,9 +13,10 @@ I have decided to write this as a practice project and it is my first bigger bas
 - Security kept in mind at all th time, however this is not your tinfoil-hat paranoid Linux distro. For example FIDO2 token is not used as 2nd factor, but as a strong single-factor login tool, and so on. Security balanced with convenience.
 - Working SecureBoot using Shim-signed AUR package. This is also a band-aid for unencrypted `/boot` partition.
 - Btrfs with snapshots on LUKS encrypted volume and hibernate-to-swapfile.
+- Configure automount of samba shares, if required
 
 ### Planned features
-- Some more sane system defaults (Firewall, USBGuard, LaptopTools and so on).
+- Some more sane system defaults (TLP, backlight control, and so on).
 - GUI (Sway on Wayland, login manager).
 - Import dotfiles from .git repository, configure as much of the OS as possible automagically.
 - Optionally retrieve a backup of `/home`.
