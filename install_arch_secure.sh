@@ -409,7 +409,9 @@ echo "auth optional pam_faildelay.so delay=4000000" >> /mnt/etc/pam.d/system-log
 [[ $SKIP_FIREWALL = true ]] || set_firewall
 
 ## Set Pacman mirrorlist
+notify "Using reflector to set pacman mirrorlist, please be patient"
 reflector --country Czechia,Germany,Slovakia,Austria --age 12 --number 5 --protocol https --sort rate --save /mnt/etc/pacman.d/mirrolist
+notify "Pacman mirrorlist setup complete"
 
 ## If we have specified Samba mounts, create mountpoints, store credentials and add them to the fstab
 if [[ -n ${SAMBA_SHARES} ]]; then
