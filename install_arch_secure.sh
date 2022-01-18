@@ -220,23 +220,26 @@ EOF
 
 set_firewall () {
 
-    ## We need to change some rules to work with ipv6
-    ## TODO - Neighbor discovery protocol - We need to know attached subnets, do i really care? 
-    cp /etc/iptables/simple_firewall.rules /etc/iptables/simple_firewall_ipv6.rules
-    sed -i 's/tcp-reset/icmp6-adm-prohibited/' /mnt/etc/iptables/simple_firewall_ipv6.rules
-    sed -i 's/icmp-port-unreachable/icmp6-adm-prohibited/' /mnt/etc/iptables/simple_firewall_ipv6.rules
-    sed -i 's/icmp-proto-unreachable/icmp6-adm-prohibited/' /mnt/etc/iptables/simple_firewall_ipv6.rules
-    sed -i 's/-p icmp/-p ipv6-icmp --icmpv6-type 128 -m conntrack --ctstate NEW/' /mnt/etc/iptables/simple_firewall_ipv6.rules
-    ## DHCPv6
-    sed -i '/-p ipv6-icmp/s/.*/&\\\n-A INPUT -p udp --sport 547 --dport 546 -j ACCEPT/' /mnt/etc/iptables/simple_firewall_ipv6.rules
+    if ! [[ ${IPV6_DISABLE} == true ]]; then
+	## We need to change some rules to work with ipv6
+	## TODO - Neighbor discovery protocol - We need to know attached subnets, do i really care? 
+	cp /etc/iptables/simple_firewall.rules /etc/iptables/simple_firewall_ipv6.rules
+	sed -i 's/tcp-reset/icmp6-adm-prohibited/' /mnt/etc/iptables/simple_firewall_ipv6.rules
+	sed -i 's/icmp-port-unreachable/icmp6-adm-prohibited/' /mnt/etc/iptables/simple_firewall_ipv6.rules
+	sed -i 's/icmp-proto-unreachable/icmp6-adm-prohibited/' /mnt/etc/iptables/simple_firewall_ipv6.rules
+	sed -i 's/-p icmp/-p ipv6-icmp --icmpv6-type 128 -m conntrack --ctstate NEW/' /mnt/etc/iptables/simple_firewall_ipv6.rules
+	## DHCPv6
+	## FIX - Trailing \ on previous line!
+	sed -i '/-p ipv6-icmp/s/.*/&\\\n-A INPUT -p udp --sport 547 --dport 546 -j ACCEPT/' /mnt/etc/iptables/simple_firewall_ipv6.rules
+
+	${CHROOT_PREFIX} ip6tables-restore < /etc/iptables/empty.rules
+	${CHROOT_PREFIX} ip6tables-restore < /etc/iptables/simple_firewall_ipv6.rules
+	${CHROOT_PREFIX} ip6tables-save -f /etc/iptables/ip6tables.rules
+    fi
     
     ${CHROOT_PREFIX} iptables-restore < /etc/iptables/empty.rules
     ${CHROOT_PREFIX} iptables-restore < /etc/iptables/simple_firewall.rules
     ${CHROOT_PREFIX} iptables-save -f /etc/iptables/iptables.rules
-
-    ${CHROOT_PREFIX} ip6tables-restore < /etc/iptables/empty.rules
-    ${CHROOT_PREFIX} ip6tables-restore < /etc/iptables/simple_firewall_ipv6.rules
-    ${CHROOT_PREFIX} ip6tables-save -f /etc/iptables/ip6tables.rules
 
     ${CHROOT_PREFIX} systemctl enable iptables.service
 }
