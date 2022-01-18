@@ -415,19 +415,19 @@ notify "Pacman mirrorlist setup complete"
 
 ## If we have specified Samba mounts, create mountpoints, store credentials and add them to the fstab
 if [[ -n ${SAMBA_SHARES} ]]; then
-    mkdir -p /etc/samba/credentials
-    chmod 700 /etc/samba/credentials
+    mkdir -p /mnt/etc/samba/credentials
+    chmod 700 /mnt/etc/samba/credentials
 
     for Share in ${SAMBA_SHARES}; do
 	Share_name=$(grep -o '[^\/]*$' <<< ${Share})
 
-	mkdir /mnt/${Share_name}
+	mkdir /mnt/mnt/${Share_name}
 
-	echo "username=${SAMBA_USER}" > /etc/samba/credentials/${Share_name}
-	echo "password=${SAMBA_PW}" >> /etc/samba/credentials/${Share_name}
-	chmod 600 /etc/samba/credentials/${Share_name}
+	echo "username=${SAMBA_USER}" > /mnt/etc/samba/credentials/${Share_name}
+	echo "password=${SAMBA_PW}" >> /mnt/etc/samba/credentials/${Share_name}
+	chmod 600 /mnt/etc/samba/credentials/${Share_name}
 
-	echo "${Share}	/mnt/${Share_name} _netdev,nofail,x-systemd.automount,x-systemd.idle-timeout=10min,credentials=/etc/samba/credentials/${Share_name} 0 0" >> /etc/fstab
+	echo "${Share}	/mnt/${Share_name} _netdev,nofail,x-systemd.automount,x-systemd.idle-timeout=10min,credentials=/etc/samba/credentials/${Share_name} 0 0" >> /mnt/etc/fstab
     done
 fi
 
