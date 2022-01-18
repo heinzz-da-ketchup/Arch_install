@@ -228,7 +228,7 @@ set_firewall () {
     sed -i 's/icmp-proto-unreachable/icmp6-adm-prohibited/' /mnt/etc/iptables/simple_firewall_ipv6.rules
     sed -i 's/-p icmp/-p ipv6-icmp --icmpv6-type 128 -m conntrack --ctstate NEW/' /mnt/etc/iptables/simple_firewall_ipv6.rules
     ## DHCPv6
-    sed i '/-p icmp/a -A INPUT -p udp --sport 547 --dport 546 -j ACCEPT' /mnt/etc/iptables/simple_firewall_ipv6.rules
+    sed -i '/-p ipv6-icmp/s/.*/&\\\n-A INPUT -p udp --sport 547 --dport 546 -j ACCEPT/' /mnt/etc/iptables/simple_firewall_ipv6.rules
     
     ${CHROOT_PREFIX} iptables-restore < /etc/iptables/empty.rules
     ${CHROOT_PREFIX} iptables-restore < /etc/iptables/simple_firewall.rules
