@@ -428,7 +428,7 @@ if [[ -n ${SAMBA_SHARES} ]]; then
 	echo "password=${SAMBA_PW}" >> /mnt/etc/samba/credentials/${Share_name}
 	chmod 600 /mnt/etc/samba/credentials/${Share_name}
 
-	echo "${Share}	/mnt/${Share_name} _netdev,nofail,x-systemd.automount,x-systemd.idle-timeout=10min,credentials=/etc/samba/credentials/${Share_name} 0 0" >> /mnt/etc/fstab
+	echo "${Share}	/mnt/${Share_name} cifs _netdev,nofail,x-systemd.automount,x-systemd.idle-timeout=10min,credentials=/etc/samba/credentials/${Share_name} 0 0" >> /mnt/etc/fstab
     done
 fi
 
