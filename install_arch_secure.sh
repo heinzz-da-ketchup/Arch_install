@@ -53,7 +53,9 @@ net_connect () {
 
 	    WLAN=$(get_valid_input "iwctl device list" "wlan device name")
 
-	    SSID=$(get_valid_input "iwctl station $WLAN get-networks" "SSID")
+	    if [[ -z ${SSID} ]]; then
+		SSID=$(get_valid_input "iwctl station $WLAN get-networks" "SSID")
+	    fi
 
 	    iwctl station ${WLAN} connect ${SSID}
 	    sleep 1

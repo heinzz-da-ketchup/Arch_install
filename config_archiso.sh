@@ -86,10 +86,23 @@ echo ')' >> /mnt/archiso_custom/profiledef.sh
 echo "KEYMAP=cz-qwertz" >> /mnt/archiso_custom/airootfs/etc/vconsole.conf
 
 ## set wifi
-## DEBUG - Publishing my PSK online? probably not the best idea... (@_@)
-mkdir -p /mnt/archiso_custom/airootfs/var/lib/iwd
-echo "[Security]" >> /mnt/archiso_custom/airootfs/var/lib/iwd/CabinLove.psk
-echo "Passphrase=NebudouMitStenata" >> /mnt/archiso_custom/airootfs/var/lib/iwd/CabinLove.psk
+
+printf ${GREEN} 
+printf "\n##############################\n" 
+printf "Do you want to set wifi for live ISO? y/n\n"
+read Confirm
+printf "##############################\n" 
+if [[ ${Confirm} == 'y' || ${Confirm} == 'Y' ]]; then 
+    if [[ -z ${SSID} ]]; then
+	SSID=$(get_confirmed_input "Wifi SSID")
+    fi
+    if [[ -z ${PSK} ]]; then
+	PSK=$(get_confirmed_input "Wifi Passphrase")
+    fi
+    mkdir -p /mnt/archiso_custom/airootfs/var/lib/iwd
+    echo "[Security]" >> /mnt/archiso_custom/airootfs/var/lib/iwd/${SSID}.psk
+    echo "Passphrase=${PSK}" >> /mnt/archiso_custom/airootfs/var/lib/iwd/${SSID}.psk
+fi
 
 ## add git package
 echo "git" >> /mnt/archiso_custom/packages.x86_64
