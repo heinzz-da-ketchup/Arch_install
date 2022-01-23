@@ -7,12 +7,23 @@
 ##	Install fully configured system with Sway and dotfiles
 ##
 ## TODO:
-##	Everything, man!
-##	Configurable via cmdline options?
+##	TLP, settings
+##	Systemd power options (sleep/hibernate timeout, ACPI options - lid, power button)
+##	Webcam toggle
+##	Backlight - buttons, battery/AC, dim on inactivity
+##	Volume controls
+##	---
+##	Dotfiles from git repository
+##	Backup/restore from remote share - machine-specific dotfiles, packages(?)
+##	Snapshots
+##	Login manager, Desktop environment
+##	Cleanup
 ## WONTDO:
 ##	Different partitioning schemes
 ##	Different WM and so on
 ##	Non-UEFI install (don't even try, script wont work!)
+##	Different network management tool then NetworkManager - required by TLP and i'm used to it. = )
+##	USBGuard - doesnt work in chroot, must be setup on working system, otherwise for example token wont work
 ##
 ## Auhtor: Jan Hrubes, 2021-2022
 ## ----------------------------------------------
@@ -89,7 +100,6 @@ create_filesystem () {
 }
 
 ## Mount all prepared filesystems.
-## For now (for ever?) fully hardcoded
 mount_filesystem () {
 
     if ! [[ -e /dev/mapper/cryptroot ]]; then
@@ -111,6 +121,8 @@ mount_filesystem () {
     mount -o subvol=@snapshots /dev/mapper/cryptroot /mnt/.snapshots
     mount -o subvol=@pacman_cache /dev/mapper/cryptroot /mnt/var/cache/pacman/pkg
     mount -o subvol=@swap /dev/mapper/cryptroot ${SWAPDIR}
+
+    notify "All filesystems mounted"
 }
 
 ## Create swap file, same size as RAM, to enable hybernation
@@ -125,7 +137,6 @@ create_swapfile () {
 	chmod 600 ${SWAPFILE}
 	mkswap ${SWAPFILE}
 	swapon ${SWAPFILE}	
-
 }
 
 ## Configure hibernation to swapfile by adding proper options to grub config.
@@ -174,11 +185,6 @@ EOF
 	## ----------------------------------------------
 	## Prepare shim loader
 	## ----------------------------------------------
-
-	## DEBUG Is this needed? grub now doesnt create BOOTx64.efi
-	#if ! [[ -e /mnt/boot/EFI/GRUB/grubx64.efi ]]; then
-		#cp /mnt/boot/EFI/GRUB/BOOTx64.efi  /mnt/boot/EFI/GRUB/grubx64.efi 
-	#fi
 
 	cp /mnt/usr/share/shim-signed/shimx64.efi /mnt/boot/EFI/GRUB/BOOTx64.efi  
 	cp /mnt/usr/share/shim-signed/mmx64.efi /mnt/boot/EFI/GRUB/ 
@@ -296,11 +302,15 @@ fi
 
 ## Enroll fido2 key to cryptsetup (if we are using one).
 ## To prevent duplicate entries, we first remove all fido2 tokens, then enroll new one.
+## TODO - Ask if we want to use recovery key, or keep passphrase?
 if ! [[ ${FIDO2_DISABLE} = true ]]; then 
     notify "Enrolling FIDO2 key for enrcrypted drive"
     ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=fido2 --fido2-device=auto ${CRYPT_PARTITION}
     ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=recovery --recovery-key ${CRYPT_PARTITION}
     warn_wait "This is your recovery key.\nMake sure you dont lose it!!!"
+
+    ## DEBUG - not yet, debuging and token doesnt work in arch live iso... 
+    # ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=password ${CRYPT_PARTITION}
 fi
 
 ## Set locales and keymap
@@ -368,7 +378,6 @@ ${CHROOT_PREFIX} hwclock --systohc
 sed -i 's/^#Fallback/Fallback/' /mnt/etc/systemd/timesyncd.conf
 ${CHROOT_PREFIX} systemctl enable systemd-timesyncd.service
 
-
 ## set hosntame
 echo ${HOSTNAME} > /mnt/etc/hostname
 
@@ -383,6 +392,7 @@ if ! [[ ${FIDO2_DISABLE} == true ]]; then
     notify_wait "Set your FIDO2 token for login and sudo"
     mkdir -p /mnt/home/${USERNAME}/.config/Yubico
     ${CHROOT_PREFIX} pamu2fcfg -o pam://${HOSTNAME} -i pam://${HOSTNAME} > /mnt/home/${USERNAME}/.config/Yubico/u2f_keys
+    ## Because srch-chroot runs command as root, we need to edit created file and change username
     sed -i "s/root/${USERNAME}/" /mnt/home/${USERNAME}/.config/Yubico/u2f_keys
 
     ## Set pam configuration
@@ -390,11 +400,13 @@ if ! [[ ${FIDO2_DISABLE} == true ]]; then
     sed -i "1a auth sufficient pam_u2f.so cue origin=pam://${HOSTNAME} appid=pam://${HOSTNAME}" /mnt/etc/pam.d/sudo
 fi
 
+## Enforce 4sec delay between failed login attempst
+echo "auth optional pam_faildelay.so delay=4000000" >> /mnt/etc/pam.d/system-login
+
 ## Disable predictable interface names
 [[ -e /mnt/etc/udev/rules.d/80-net-setup-link.rules ]] || ln -s /dev/null /mnt/etc/udev/rules.d/80-net-setup-link.rules
 
 ## Enable networkmanager service
-## TODO - check if networkmanager exists? 
 ${CHROOT_PREFIX} systemctl enable NetworkManager.service
 
 ## Enable periodic fstrim, screw you if you dont have ssd in 2022 >= )
@@ -402,9 +414,6 @@ ${CHROOT_PREFIX} systemctl enable fstrim.timer
 
 ## Set lower swappiness
 echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
-
-## Enforce 4sec delay between failed login attempst
-echo "auth optional pam_faildelay.so delay=4000000" >> /mnt/etc/pam.d/system-login
 
 ## Set basic firewall
 [[ $SKIP_FIREWALL = true ]] || set_firewall
@@ -415,6 +424,7 @@ reflector --country Czechia,Germany,Slovakia,Austria --age 12 --number 5 --proto
 notify "Pacman mirrorlist setup complete"
 
 ## If we have specified Samba mounts, create mountpoints, store credentials and add them to the fstab
+## TODO - Specify credentials for each smb mount?
 if [[ -n ${SAMBA_SHARES} ]]; then
     mkdir -p /mnt/etc/samba/credentials
     chmod 700 /mnt/etc/samba/credentials
@@ -432,15 +442,11 @@ if [[ -n ${SAMBA_SHARES} ]]; then
     done
 fi
 
-## DEBUG - copy over the install scripts to be able to work on them in the OS
+## DEBUG - copy over the install scripts and ssh keys to be able to work on them in the OS
 cp -r ${SCRIPT_DIR} /mnt/home/${USERNAME}/
 cp -r /root/.ssh /mnt/home/${USERNAME}/
 USER_ID=$(grep ${USERNAME} /mnt/etc/passwd | cut -d ':' -f 4 )
 chown -R ${USER_ID}:${USER_ID} /mnt/home/${USERNAME}/
-
-## before reboot, make sure to remove old passphrase from cryptroot if using FIDO2 token.
-## DEBUG - not yet, debuging and token doesnt work in arch live iso... 
-# if ! [[ ${FIDO2_DISABLE} = true ]]; then ${CHROOT_PREFIX} systemd-cryptenroll --wipe-slot=password ${CRYPT_PARTITION}; fi
 
 ## We should have working system, lets try to go for it. = D
 notify_wait "Installation complete, ready to reboot"
