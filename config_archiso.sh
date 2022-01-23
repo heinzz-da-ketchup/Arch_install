@@ -10,9 +10,12 @@ if [[ -z ${USERNAME} ]]; then
 fi
 
 ## Prepare packages and binary files to use
-notify "Installing 'base-devel' and 'archiso'"
-sudo pacman -Sy base-devel archiso
-## TODO - Install build-devel only if needed
+notify "Installing 'archiso'"
+sudo pacman -Sy archiso
+
+if ! [[ -e ${SCRIPT_DIR}/btrfs_map_physical  &&  $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
+    sudo pacman -Sy base-devel
+fi
 
 ## Get and build btrfs_map_physical
 if ! [[ -e ${SCRIPT_DIR}/btrfs_map_physical ]]; then
