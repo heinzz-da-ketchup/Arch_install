@@ -25,6 +25,15 @@ I have decided to write this as a practice project and it is my first bigger bas
 
 Simply, goal of this tool is to help me get most of the way of a fully configured and populated OS. We'll see how it goes. = )
 
+### Won't do
+These are features i will not add and are out of scope of this script
+- Different/customizable filesystem layouts
+- Different FS type(s)
+- Different WindowManager, Login manager and so on
+- Non UEFI (understandable since we are working with SecureBoot. Its 2022, wake up.)
+- Different network managment tool then NetworkManager
+- Alternative init tools, say what you want but systemd is actually pretty cool.
+
 ## Usage
 
 ### Prepare ArchISO
