@@ -7,7 +7,6 @@
 ##	Install fully configured system with Sway and dotfiles
 ##
 ## TODO:
-##	Systemd power options (sleep/hibernate timeout, ACPI options - lid, power button)
 ##	Webcam toggle
 ##	Backlight - buttons, battery/AC, dim on inactivity
 ##	Volume controls
@@ -426,6 +425,26 @@ echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 ## Set Some TLP settings - Disable Bluetooth on battery if not in use, disable wifi if LAN is connected
 sed -i 's/^#DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE=".*"/DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE="bluetooth"/' /mnt/etc/tlp.conf
 sed -i 's/^#DEVICES_TO_DISABLE_ON_LAN_CONNECT=".*"/DEVICES_TO_DISABLE_ON_LAN_CONNECT="wifi"/' /mnt/etc/tlp.conf
+
+## Hibernate if battery is under 5% via udev rule
+cat > /mnt/etc/udev/rules.d/99_lowbat.rules << EOF
+# Suspend the system when battery level drops to 5% or lower
+SUBSYSTEM=="power_supply", ATTR{status}=="Discharging", ATTR{capacity}=="[0-5]", RUN+="/usr/bin/systemctl hibernate"
+EOF
+
+## Systemd logind sleep/hibernate settings
+mkdir /mnt/etc/systemd/logind.conf.d
+cat > /mnt/etc/logind.conf.d/acpi.conf << EOF
+HandlePowerKey=hibernate
+HandleLidSwitch=suspend-then-hibernate
+HandleLidSwitchDocked=suspend
+EOF
+
+## Systemd logind sleep/hibernate settings
+mkdir /mnt/etc/systemd/sleep.conf.d
+cat > /mnt/etc/sleep.conf.d/suspend_then_hibernate.conf << EOF
+HibernateDelaySec=60min
+EOF
 
 ## Set Pacman mirrorlist
 notify "Using reflector to set pacman mirrorlist, please be patient"
