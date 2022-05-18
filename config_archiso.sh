@@ -5,10 +5,6 @@ SCRIPT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 source ${SCRIPT_DIR}/vars.sh
 source ${SCRIPT_DIR}/common_functions.sh
 
-if [[ -z ${USERNAME} ]]; then
-	USERNAME=$(get_confirmed_input "username") 
-fi
-
 ## Prepare packages and binary files to use
 notify "Installing 'archiso'"
 sudo pacman -Sy archiso

@@ -63,6 +63,14 @@ if [[ $0 =~ "install_arch_secure.sh" ]]; then
     fi
 fi
 
+if [[ $0 =~ "config_archiso.sh" ]]; then
+    ## Ask for user input if we need to
+
+    if [[ -z ${USERNAME} ]]; then 
+	USERNAME=$(get_confirmed_input "username") 
+    fi
+fi
+
 ## For others, we have sane defaults
 if [[ -z ${BUILDDIR} ]]; then
 	BUILDDIR="/mnt/home/${USERNAME}/builds"
