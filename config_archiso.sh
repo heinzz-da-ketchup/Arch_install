@@ -47,7 +47,7 @@ if ! [[ $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
 	less shim-signed.install
 
 	printf ${YELLOW}
-	printf "Is it OK? Y/y to continue"
+	printf "Is it OK? Y/y to continue?\n"
 	printf ${NC}
 	read Confirm
 	if ! [[ ${Confirm} =~ y|Y ]]; then
