@@ -328,7 +328,11 @@ sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modcon
 
 ## Create /etc/crypttab.initramfs, add cryptroot by UUID
 cp /mnt/etc/crypttab /mnt/etc/crypttab.initramfs
-echo "cryptroot	${CRYPT_PARTITION}	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
+if [[ ${FIDO2_DISABLE} = true ]]; then 
+    echo "cryptroot	${CRYPT_PARTITION}	-	" >> /mnt/etc/crypttab.initramfs
+else
+    echo "cryptroot	${CRYPT_PARTITION}	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
+fi
 
 ## make initramfs
 notify "Generating initramfs"
