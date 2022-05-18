@@ -326,7 +326,7 @@ echo "KEYMAP="${KEYMAP} > /mnt/etc/vconsole.conf
 ## Update /etc/mkinitcpio.conf - add hooks
 sed -i 's/^HOOKS=(.*)/HOOKS=(base systemd autodetect keyboard sd-vconsole modconf block sd-encrypt filesystems fsck)/' /mnt/etc/mkinitcpio.conf
 
-## Create /etc/crypttab.initramfs, add cryptrrot by UUID
+## Create /etc/crypttab.initramfs, add cryptroot by UUID
 cp /mnt/etc/crypttab /mnt/etc/crypttab.initramfs
 echo "cryptroot	${CRYPT_PARTITION}	-	fido2-device=auto" >> /mnt/etc/crypttab.initramfs
 
