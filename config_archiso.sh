@@ -36,7 +36,7 @@ if ! [[ $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
 
 	mkdir -p ${BUILDDIR_CHROOT}
 	cd ${BUILDDIR_CHROOT}
-	rm -r shim-signed 2>/dev/null
+	sudo rm -r shim-signed 2>/dev/null
 	git clone https://aur.archlinux.org/shim-signed.git
 	cd ${BUILDDIR_CHROOT}/shim-signed
 
