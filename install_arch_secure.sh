@@ -7,7 +7,6 @@
 ##	Install fully configured system with Sway and dotfiles
 ##
 ## TODO:
-##	TLP, settings
 ##	Systemd power options (sleep/hibernate timeout, ACPI options - lid, power button)
 ##	Webcam toggle
 ##	Backlight - buttons, battery/AC, dim on inactivity
@@ -423,6 +422,10 @@ echo "vm.swappiness=10" > /mnt/etc/sysctl.d/99-swappiness.conf
 
 ## Set basic firewall
 [[ $SKIP_FIREWALL = true ]] || set_firewall
+
+## Set Some TLP settings - Disable Bluetooth on battery if not in use, disable wifi if LAN is connected
+sed -i 's/^#DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE=".*"/DEVICES_TO_DISABLE_ON_BAT_NOT_IN_USE="bluetooth"/' /mnt/etc/tlp.conf
+sed -i 's/^#DEVICES_TO_DISABLE_ON_LAN_CONNECT=".*"/DEVICES_TO_DISABLE_ON_LAN_CONNECT="wifi"/' /mnt/etc/tlp.conf
 
 ## Set Pacman mirrorlist
 notify "Using reflector to set pacman mirrorlist, please be patient"

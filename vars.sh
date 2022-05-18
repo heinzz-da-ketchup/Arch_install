@@ -22,7 +22,7 @@ CHROOT_PREFIX="arch-chroot /mnt"
 KEYMAP="cz-qwertz" 				
 
 USERSW="networkmanager vim git openssh"
-BASICUTILS="btrfs-progs man-db man-pages texinfo grub efibootmgr sudo sbsigntools polkit"
+BASICUTILS="btrfs-progs man-db man-pages texinfo grub efibootmgr sudo sbsigntools polkit tlp tlp-rdw"
 
 ## Script will ask or use defaults if empty
 INSTALL_PARTITION=""		## As a full path, eg. "/dev/sdb"
