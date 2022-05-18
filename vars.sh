@@ -5,7 +5,7 @@
 ## ----------------------------------------------
 
 ## Some control variables
-FIDO2_DISABLE=false
+FIDO2_DISABLE=true
 IPV6_DISABLE=true				## For those of us who have borked ipv6... (-_-)
 SKIP_CREATE_FS=false
 SKIP_MOUNT_FS=false
