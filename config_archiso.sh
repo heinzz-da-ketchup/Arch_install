@@ -2,8 +2,8 @@
 
 SCRIPT_DIR=$(cd $(dirname "${BASH_SOURCE[0]}") && pwd)
 
-source ${SCRIPT_DIR}/vars.sh
 source ${SCRIPT_DIR}/common_functions.sh
+source ${SCRIPT_DIR}/vars.sh
 
 ## Prepare packages and binary files to use
 notify "Installing 'archiso'"
