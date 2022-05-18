@@ -22,9 +22,9 @@ if ! [[ -e ${SCRIPT_DIR}/btrfs_map_physical ]]; then
 	
 	notify "Getting and compiling 'btrfs_map_physical' tool"
 
-	mkdir -p ${BUILDDIR}
-	mkdir -p ${BUILDDIR}/btrfs_map_physical
-	cd ${BUILDDIR}/btrfs_map_physical
+	mkdir -p ${BUILDDIR_CHROOT}
+	mkdir -p ${BUILDDIR_CHROOT}/btrfs_map_physical
+	cd ${BUILDDIR_CHROOT}/btrfs_map_physical
 
 	curl -LO https://github.com/osandov/osandov-linux/raw/master/scripts/btrfs_map_physical.c
 	gcc -O2 -o btrfs_map_physical btrfs_map_physical.c
@@ -38,11 +38,11 @@ if ! [[ $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
 	
 	notify "Getting 'shim-signed' from AUR and buildng package"
 
-	mkdir -p ${BUILDDIR}
-	cd ${BUILDDIR}
+	mkdir -p ${BUILDDIR_CHROOT}
+	cd ${BUILDDIR_CHROOT}
 	rm -r shim-signed 2>/dev/null
 	git clone https://aur.archlinux.org/shim-signed.git
-	cd ${BUILDDIR}/shim-signed
+	cd ${BUILDDIR_CHROOT}/shim-signed
 
 	## Due dilligence
 	warn_wait "Check your AUR build files!" 
@@ -60,7 +60,7 @@ if ! [[ $(ls -l ${SCRIPT_DIR} | grep shim-signed.*pkg.tar.zst) ]]; then
 
 	makepkg -rc
 
-	cp ${BUILDDIR}/shim-signed/shim-signed-*pkg.tar.zst ${SCRIPT_DIR}
+	cp ${BUILDDIR_CHROOT}/shim-signed/shim-signed-*pkg.tar.zst ${SCRIPT_DIR}
 	cd ${SCRIPT_DIR}
 fi
 
