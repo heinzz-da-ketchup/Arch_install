@@ -91,6 +91,7 @@ printf "\n##############################\n"
 printf "Do you want to set wifi for live ISO? y/n\n"
 read Confirm
 printf "##############################\n" 
+printf ${NC} 
 if [[ ${Confirm} == 'y' || ${Confirm} == 'Y' ]]; then 
     if [[ -z ${SSID} ]]; then
 	SSID=$(get_confirmed_input "Wifi SSID")
