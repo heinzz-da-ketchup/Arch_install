@@ -434,8 +434,7 @@ EOF
 
 ## Systemd logind sleep/hibernate settings
 mkdir /mnt/etc/systemd/logind.conf.d
-touch /mnt/etc/logind.conf.d/acpi.conf 
-cat > /mnt/etc/logind.conf.d/acpi.conf << EOF
+cat > /mnt/etc/systemd/logind.conf.d/acpi.conf << EOF
 HandlePowerKey=hibernate
 HandleLidSwitch=suspend-then-hibernate
 HandleLidSwitchDocked=suspend
@@ -443,8 +442,7 @@ EOF
 
 ## Systemd logind sleep/hibernate settings
 mkdir /mnt/etc/systemd/sleep.conf.d
-touch /mnt/etc/sleep.conf.d/suspend_then_hibernate.conf 
-cat > /mnt/etc/sleep.conf.d/suspend_then_hibernate.conf << EOF
+cat > /mnt/etc/systemd/sleep.conf.d/suspend_then_hibernate.conf << EOF
 HibernateDelaySec=60min
 EOF
 
