@@ -483,6 +483,10 @@ if [ -z $DISPLAY ] && [ "$(tty)" = "/dev/tty1" ]; then
 fi
 EOF
 
+## DEBUG - Download my i3 config and use as sway config
+mkdir /mnt/home/${USERNAME}/.config/sway/
+wget https://raw.githubusercontent.com/heinzz-da-ketchup/dotfiles/main/i3_config -O /mnt/home/${USERNAME}/.config/sway/config
+
 ## DEBUG - copy over the install scripts and ssh keys to be able to work on them in the OS
 cp -r ${SCRIPT_DIR} /mnt/home/${USERNAME}/
 cp -r /root/.ssh /mnt/home/${USERNAME}/
