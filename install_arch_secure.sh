@@ -470,6 +470,19 @@ if [[ -n ${SAMBA_SHARES} ]]; then
     done
 fi
 
+## ----------------------------------------------
+## Desktop environment and login manager
+## ----------------------------------------------
+
+## enable sway on login as a login shell
+cat >> /mnt/home/${USERNAME}/.bash_profile << EOF
+
+## Start sway on login shell
+if [ -z $DISPLAY ] && [ "$(tty)" = "/dev/tty1" ]; then
+  exec sway
+fi
+EOF
+
 ## DEBUG - copy over the install scripts and ssh keys to be able to work on them in the OS
 cp -r ${SCRIPT_DIR} /mnt/home/${USERNAME}/
 cp -r /root/.ssh /mnt/home/${USERNAME}/

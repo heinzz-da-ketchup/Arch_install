@@ -21,7 +21,7 @@ ONLY_MOUNT=false				## DEBUG - Stop script after mounting filesystems
 CHROOT_PREFIX="arch-chroot /mnt"
 KEYMAP="cz-qwertz" 				
 
-USERSW="networkmanager vim git openssh"
+USERSW="networkmanager vim git openssh sway"
 BASICUTILS="btrfs-progs man-db man-pages texinfo grub efibootmgr sudo sbsigntools polkit tlp tlp-rdw"
 
 ## Script will ask or use defaults if empty
